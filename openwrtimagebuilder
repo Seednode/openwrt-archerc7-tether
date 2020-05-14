@@ -39,11 +39,14 @@ fi
 # set hostname to first argument
 hostname="phonetest"
 
+# set base directory
+basedir="$(pwd)/$hostname"
+
 # set logfile location
-logfile="$HOME/$hostname/build-$(date +%Y%m%d%H%M%S).log"
+logfile="$basedir/build-$(date +%Y%m%d%H%M%S).log"
 
 # set imagebuilder directory
-imagebuilderdir="$HOME/$hostname/imagebuilder"
+imagebuilderdir="$basedir/imagebuilder"
 
 # set the lan subnet to use
 subnet="192.168.0"
@@ -80,8 +83,8 @@ echo "Imagebuilder version set to $version"
 echo "imagebuilder directory is $imagebuilderdir"
 
 # set and display working directory
-basedir="$imagebuilderdir/$version"
-echo "Working directory is $basedir"
+workdir="$imagebuilderdir/$version"
+echo "Working directory is $workdir"
 
 # download and extract the openwrt imagebuilder tool
 echo "Downloading imagebuilder tarball..."
@@ -92,10 +95,10 @@ echo "Imagebuilder downloaded."
 # create directory for file overrides; this will serve as the effective / for any overwriting files
 # i.e. files/etc/dropbear/authorized_keys will be located at /etc/dropbear/authorized_keys in the final squashfs image
 echo "Creating required directories..."
-mkdir -p "$basedir"/files/etc/{config,dropbear}/
+mkdir -p "$workdir"/files/etc/{config,dropbear}/
 
 # create required directories
-mkdir -p "$basedir"/files/etc/rc.button
+mkdir -p "$workdir"/files/etc/rc.button
 
 # finished creating directories
 echo "Finished creating directories."
@@ -104,12 +107,12 @@ echo "Finished creating directories."
 echo "Generating system config files..."
 
 # store ssh public key for passwordless login
-cat <<'EOL' | tee "$basedir"/files/etc/dropbear/authorized_keys
+cat <<'EOL' | tee "$workdir"/files/etc/dropbear/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSSJ5vfFH2j1MyCx/p/IERTIqaNWvfdLl6mR2T9GxwOEU5AwW6VCkKkp9GZOHepWSIz+/dHxUfLDY/zoFk6K2D8UcM6CIfnL0xFNn6uUK/3t/9/lJuUNuH682lmuePe+xRcdccb/3X9f24HyurWIQPZKu//HVV3AT7D/6d2BtDNE9nzpDQC2svXtLdqOpxSavyTEFFiEvvYtKduPO6ZkJyxk5u9HCYXsCOfXHjYtWc2EE+RQ37+QgzRBzOADm5m3OZxGlVKex+yjnPj74/sOr81jehbE6Kd9+07VmcIYy+VU7TCPX6V1Olw9Tyq7paon61TU7gu9yK9GUWUA8CaNU7 sinc@gate
 EOL
 
 # create dnsmasq configs and disable win2k filtering (which breaks jabber/xmpp)
-cat <<'EOL' | tee "$basedir"/files/etc/config/dhcp
+cat <<'EOL' | tee "$workdir"/files/etc/config/dhcp
 config dnsmasq
 option domainneeded '1'
 option localise_queries '1'
@@ -143,7 +146,7 @@ option leasetrigger '/usr/sbin/odhcpd-update'
 EOL
 
 # create firewall rules for remote administration
-cat <<EOL | tee "$basedir"/files/etc/config/firewall
+cat <<EOL | tee "$workdir"/files/etc/config/firewall
 config defaults
 option input accept
 option forward accept
@@ -187,15 +190,7 @@ config rule
 option name PERMIT-SSH-FROM-WAN
 option src WAN
 option proto tcp
-option dest_port 22
-option target accept
-option family ipv4
-
-config rule
-option name PERMIT-HTTPS-FROM-WAN
-option src WAN
-option proto tcp
-option dest_port 443
+option dest_port 9022
 option target accept
 option family ipv4
 
@@ -209,16 +204,16 @@ option family ipv4
 EOL
 
 # set ssh listen port to tcp/9022 on the wan and disable password login
-cat <<'EOL' | tee "$basedir"/files/etc/config/dropbear
+cat <<'EOL' | tee "$workdir"/files/etc/config/dropbear
 config dropbear
-option PasswordAuth 'off'
-option Port '22'
+option PasswordAuth 'on'
+option Port '9022'
 option RootPasswordAuth 'off'
 EOL
 
 # set up a uhttpd instance listening on:
 # - tcp/443 on the wan for LuCi over https
-cat <<EOL | tee "$basedir"/files/etc/config/uhttpd
+cat <<EOL | tee "$workdir"/files/etc/config/uhttpd
 config uhttpd 'luci'
 list listen_https '0.0.0.0:443'
 option home '/www'
@@ -244,7 +239,7 @@ option commonname 'OpenWRT'
 EOL
 
 # set hostname, timezone, and other system info
-cat <<EOL | tee "$basedir"/files/etc/config/system
+cat <<EOL | tee "$workdir"/files/etc/config/system
 config system
 option cronloglevel '8'
 option zonename 'America/Chicago'
@@ -276,7 +271,7 @@ option trigger 'none'
 EOL
 
 # set lan subnet to $subnet.0/24
-cat <<EOL | tee "$basedir"/files/etc/config/network
+cat <<EOL | tee "$workdir"/files/etc/config/network
 config interface 'loopback'
 option ifname 'lo'
 option proto 'static'
@@ -320,7 +315,7 @@ option ports '1 6'
 EOL
 
 # set default ssid/password
-cat <<EOL | tee "$basedir"/files/etc/config/wireless
+cat <<EOL | tee "$workdir"/files/etc/config/wireless
 config wifi-device 'radio0'
 option type 'mac80211'
 option channel '42'
@@ -363,7 +358,7 @@ EOL
 
 # create an empty script for the wps trigger
 # we only want wps to be activated via script
-cat <<'EOL' | tee "$basedir"/files/etc/rc.button/wps
+cat <<'EOL' | tee "$workdir"/files/etc/rc.button/wps
 # do nothing on wps button press
 EOL
 
@@ -372,22 +367,22 @@ echo "Config files written."
 
 # fix permissions
 echo "Setting permissions for all modified directories..."
-chmod 0700 "$basedir"/files/etc/dropbear
-chmod 0600 "$basedir"/files/etc/dropbear/authorized_keys
-chmod 0755 "$basedir"/files/etc/rc.button/wps
+chmod 0700 "$workdir"/files/etc/dropbear
+chmod 0600 "$workdir"/files/etc/dropbear/authorized_keys
+chmod 0755 "$workdir"/files/etc/rc.button/wps
 echo "Permissions set."
 
 # build the image; the output will be located in $basedir/bin/targets/ar71xx/generic/
 # - image for web ui upgrade: "$HOME"/"$hostname"/factory.bin
 # - image for cli upgrade: "$HOME"/"$hostname"/sysupgrade.bin
 echo "Building OpenWRT image..."
-cd "$basedir" && \
+cd "$workdir" && \
 make image \
 PROFILE='archer-c7-v2' \
 PACKAGES='luci-ssl luci-app-sqm luci-app-statistics tmux iwinfo wpad hostapd-utils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
 FILES=files && \
-cp "$basedir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$HOME"/"$hostname"/factory.bin && \
-cp "$basedir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$HOME"/"$hostname"/sysupgrade.bin
+cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
+cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
 
 # end function
 } 2>&1 | tee -a "$logfile" >/dev/null
