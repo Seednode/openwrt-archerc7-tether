@@ -1,0 +1,399 @@
+#!/usr/bin/env bash
+
+## a basic script for building openwrt/lede images for
+## the TPLink Archer C7 v2 on ubuntu 18.04
+
+# wps pushbutton can be initiated either with the physical wps/reset button,
+# or by running `hostapd_cli wps_pbc` from the command line. you then have
+# two minutes to initiate the wps auth process on the end device
+
+# admin web interface can only be accessed via lan from address $subnet.254
+
+# recovery instructions:
+# set up tftpd server listening on 192.168.0.66 serving ArcherC7v2_tp_recovery.bin (stripped, non-boot)
+# available at https://cdn.seednode.co/misc/ArcherC7v2_tp_recovery.bin
+# plug ethernet cable into LAN1 on Archer C7, unplugging any cable in WAN port
+# power up router, then immediately press and hold the WPS/Reset button until the WPS light turns on
+# wait ~2 minutes for router to complete reset
+
+# when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
+
+## install all dependencies (uncomment and run script as root/sudo if needed)
+# create array of dependencies
+# $ declare -a dependencies=("subversion" "g++" "zlib1g-dev" "build-essential" "git" "python" "rsync" "man-db" "gawk" "libncurses5-dev" "gettext" "unzip" "file" "libssl-dev" "wget" "zip" "time")
+
+# check if dependencies are installed; if not, error out
+# $ for dependency in "${dependencies[@]}"; do
+# $ 	sudo dpkg-query -W "$dependency" >/dev/null 2>&1 || { echo >&2 "$dependency is not installed. Please install it manually and re-run the script."; exit 1; }
+# $ done
+
+# fail in a sane manner
+set -eo pipefail
+
+# make sure the correct number of arguments are passed; if not, output syntax and exit
+if [ "$#" -ne 0 ]; then
+	echo -e "\nUsage: openwrt_image_builder.sh\n"
+	exit 1
+fi
+
+# set hostname to first argument
+hostname="phonetest"
+
+# set logfile location
+logfile="$HOME/$hostname/build-$(date +%Y%m%d%H%M%S).log"
+
+# set imagebuilder directory
+imagebuilderdir="$HOME/$hostname/imagebuilder"
+
+# set the lan subnet to use
+subnet="192.168.0"
+
+# set OpenWRT imagebuilder version to use
+release="19.07.2"
+version="openwrt-imagebuilder-$release-ar71xx-generic.Linux-x86_64"
+tarball="https://downloads.openwrt.org/releases/$release/targets/ar71xx/generic/$version.tar.xz"
+
+
+# delete any old builds if they exist
+if [ -d "$imagebuilderdir/$version" ]; then
+	echo -e "\nRemoving old imagebuilder files..." >> "$logfile" 2>&1
+	rm -rf "$imagebuilderdir/$version"
+fi
+
+# create base directory for account
+mkdir -p "$imagebuilderdir"
+
+
+# display log location
+echo -e "\nLogging all build output to $logfile\n"
+
+# prepend timestamp to logfile
+echo -e "\n\nBuild began at $(date +%Y/%m/%d-%H:%M).\n\n" >> "$logfile" 2>&1
+
+# wrap the script into a function for logging purposes
+{
+
+# display imagebuilder version
+echo "Imagebuilder version set to $version"
+
+# display imagebuilder directory
+echo "imagebuilder directory is $imagebuilderdir"
+
+# set and display working directory
+basedir="$imagebuilderdir/$version"
+echo "Working directory is $basedir"
+
+# download and extract the openwrt imagebuilder tool
+echo "Downloading imagebuilder tarball..."
+mkdir -p "$imagebuilderdir"
+curl -s "$tarball" | tar -xJf - -C "$imagebuilderdir"
+echo "Imagebuilder downloaded."
+
+# create directory for file overrides; this will serve as the effective / for any overwriting files
+# i.e. files/etc/dropbear/authorized_keys will be located at /etc/dropbear/authorized_keys in the final squashfs image
+echo "Creating required directories..."
+mkdir -p "$basedir"/files/etc/{config,dropbear}/
+
+# create required directories
+mkdir -p "$basedir"/files/etc/rc.button
+
+# finished creating directories
+echo "Finished creating directories."
+
+# begin generating config files
+echo "Generating system config files..."
+
+# store ssh public key for passwordless login
+cat <<'EOL' | tee "$basedir"/files/etc/dropbear/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSSJ5vfFH2j1MyCx/p/IERTIqaNWvfdLl6mR2T9GxwOEU5AwW6VCkKkp9GZOHepWSIz+/dHxUfLDY/zoFk6K2D8UcM6CIfnL0xFNn6uUK/3t/9/lJuUNuH682lmuePe+xRcdccb/3X9f24HyurWIQPZKu//HVV3AT7D/6d2BtDNE9nzpDQC2svXtLdqOpxSavyTEFFiEvvYtKduPO6ZkJyxk5u9HCYXsCOfXHjYtWc2EE+RQ37+QgzRBzOADm5m3OZxGlVKex+yjnPj74/sOr81jehbE6Kd9+07VmcIYy+VU7TCPX6V1Olw9Tyq7paon61TU7gu9yK9GUWUA8CaNU7 sinc@gate
+EOL
+
+# create dnsmasq configs and disable win2k filtering (which breaks jabber/xmpp)
+cat <<'EOL' | tee "$basedir"/files/etc/config/dhcp
+config dnsmasq
+option domainneeded '1'
+option localise_queries '1'
+option rebind_protection '1'
+option rebind_localhost '1'
+option local '/lan/'
+option domain 'lan'
+option expandhosts '1'
+option authoritative '1'
+option readethers '1'
+option leasefile '/tmp/dhcp.leases'
+option resolvfile '/tmp/resolv.conf.auto'
+option localservice '1'
+option nonwildcard '0'
+option filterwin2k '0'
+
+config dhcp 'lan'
+option interface 'lan'
+option start '100'
+option leasetime '24h'
+option limit '154'
+
+config dhcp 'wan'
+option interface 'wan'
+option ignore '1'
+
+config odhcpd 'odhcpd'
+option maindhcp '0'
+option leasefile '/tmp/hosts/odhcpd'
+option leasetrigger '/usr/sbin/odhcpd-update'
+EOL
+
+# create firewall rules for remote administration
+cat <<EOL | tee "$basedir"/files/etc/config/firewall
+config defaults
+option input accept
+option forward accept
+option output accept
+option drop_invalid 1
+option synflood_protect 1
+
+config include
+option path /etc/firewall.user
+
+config zone
+option name LAN
+list network lan
+option input accept
+option forward accept
+option output accept
+option family ipv4
+
+config zone
+option name WAN
+list network wan
+option masq 1
+option input drop
+option forward drop
+option output accept
+option family ipv4
+
+config forwarding
+option src LAN
+option dest WAN
+option family ipv4
+
+config rule
+option name PERMIT-ICMP
+option src WAN
+option proto icmp
+option target accept
+option family ipv4
+
+config rule
+option name PERMIT-SSH-FROM-WAN
+option src WAN
+option proto tcp
+option dest_port 22
+option target accept
+option family ipv4
+
+config rule
+option name PERMIT-HTTPS-FROM-WAN
+option src WAN
+option proto tcp
+option dest_port 443
+option target accept
+option family ipv4
+
+config rule
+option name PERMIT-DHCP
+option src WAN
+option proto udp
+option dest_port 68
+option target accept
+option family ipv4
+EOL
+
+# set ssh listen port to tcp/9022 on the wan and disable password login
+cat <<'EOL' | tee "$basedir"/files/etc/config/dropbear
+config dropbear
+option PasswordAuth 'off'
+option Port '22'
+option RootPasswordAuth 'off'
+EOL
+
+# set up a uhttpd instance listening on:
+# - tcp/443 on the wan for LuCi over https
+cat <<EOL | tee "$basedir"/files/etc/config/uhttpd
+config uhttpd 'luci'
+list listen_https '0.0.0.0:443'
+option home '/www'
+option rfc1918_filter '1'
+option max_requests '3'
+option max_connections '100'
+option cert '/etc/uhttpd.crt'
+option key '/etc/uhttpd.key'
+option cgi_prefix '/cgi-bin'
+option script_timeout '60'
+option network_timeout '30'
+option http_keepalive '20'
+option tcp_keepalive '1'
+option ubus_prefix '/ubus'
+
+config cert 'px5g'
+option days '3650'
+option bits '1024'
+option country 'US'
+option state 'Minnesota'
+option location 'Rosemount'
+option commonname 'OpenWRT'
+EOL
+
+# set hostname, timezone, and other system info
+cat <<EOL | tee "$basedir"/files/etc/config/system
+config system
+option cronloglevel '8'
+option zonename 'America/Chicago'
+option timezone 'CST6CDT,M3.2.0,M11.1.0'
+option hostname '$hostname'
+option conloglevel '5'
+option log_size '1024'
+
+config timeserver 'ntp'
+option enabled '1'
+list server 'time.nist.gov'
+list server 'time.windows.com'
+
+config led 'led_wlan2g'
+option name 'WLAN2G'
+option sysfs 'tp-link:blue:wlan2g'
+option trigger 'phy1tpt'
+
+config led 'led_wlan5g'
+option name 'WLAN5G'
+option sysfs 'tp-link:blue:wlan5g'
+option trigger 'phy0tpt'
+
+config led
+option default '0'
+option name 'System'
+option sysfs 'tp-link:blue:system'
+option trigger 'none'
+EOL
+
+# set lan subnet to $subnet.0/24
+cat <<EOL | tee "$basedir"/files/etc/config/network
+config interface 'loopback'
+option ifname 'lo'
+option proto 'static'
+option ipaddr '127.0.0.1'
+option netmask '255.0.0.0'
+
+config globals 'globals'
+
+config interface 'lan'
+option ifname 'eth1'
+option force_link '1'
+option type 'bridge'
+option proto 'static'
+option netmask '255.255.255.0'
+option ipaddr '$subnet.1'
+option dns '1.1.1.1 8.8.8.8 9.9.9.9'
+option ipv6 '0'
+
+config interface 'wan'
+option ifname 'eth0'
+option _orig_ifname 'eth0'
+option _orig_bridge 'false'
+option proto 'dhcp'
+option dns '1.1.1.1 8.8.8.8 9.9.9.9'
+option ipv6 '0'
+
+config switch
+option name 'switch0'
+option reset '1'
+option enable_vlan '1'
+
+config switch_vlan
+option device 'switch0'
+option vlan '1'
+option ports '0 2 3 4 5'
+
+config switch_vlan
+option device 'switch0'
+option vlan '2'
+option ports '1 6'
+EOL
+
+# set default ssid/password
+cat <<EOL | tee "$basedir"/files/etc/config/wireless
+config wifi-device 'radio0'
+option type 'mac80211'
+option channel '42'
+option hwmode '11a'
+option path 'pci0000:01/0000:01:00.0'
+option htmode 'VHT80'
+option txpower '23'
+option country 'US'
+option legacy_rates '1'
+
+config wifi-iface
+option device 'radio0'
+option network 'lan'
+option mode 'ap'
+option encryption 'psk2'
+option ssid '$wifissid-5'
+option key '$wifipass'
+option wpa_disable_eapol_key_retries '1'
+
+config wifi-device 'radio1'
+option type 'mac80211'
+option channel '11'
+option hwmode '11g'
+option path 'platform/qca955x_wmac'
+option htmode 'HT20'
+option txpower '23'
+option country 'US'
+option legacy_rates '1'
+
+config wifi-iface
+option device 'radio1'
+option network 'lan'
+option mode 'ap'
+option ssid '$wifissid-2'
+option encryption 'psk2'
+option key '$wifipass'
+option wpa_disable_eapol_key_retries '1'
+option wps_pushbutton '1'
+EOL
+
+# create an empty script for the wps trigger
+# we only want wps to be activated via script
+cat <<'EOL' | tee "$basedir"/files/etc/rc.button/wps
+# do nothing on wps button press
+EOL
+
+# finished writing config files
+echo "Config files written."
+
+# fix permissions
+echo "Setting permissions for all modified directories..."
+chmod 0700 "$basedir"/files/etc/dropbear
+chmod 0600 "$basedir"/files/etc/dropbear/authorized_keys
+chmod 0755 "$basedir"/files/etc/rc.button/wps
+echo "Permissions set."
+
+# build the image; the output will be located in $basedir/bin/targets/ar71xx/generic/
+# - image for web ui upgrade: "$HOME"/"$hostname"/factory.bin
+# - image for cli upgrade: "$HOME"/"$hostname"/sysupgrade.bin
+echo "Building OpenWRT image..."
+cd "$basedir" && \
+make image \
+PROFILE='archer-c7-v2' \
+PACKAGES='luci-ssl luci-app-sqm luci-app-statistics tmux iwinfo wpad hostapd-utils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
+FILES=files && \
+cp "$basedir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$HOME"/"$hostname"/factory.bin && \
+cp "$basedir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$HOME"/"$hostname"/sysupgrade.bin
+
+# end function
+} 2>&1 | tee -a "$logfile" >/dev/null
+
+# append timestamp to logfile
+echo -e "Finished building OpenWRT image.\n\nBuild finished at $(date +%Y/%m/%d-%H:%M).\n" >> "$logfile"
+
+# display build completion status
+echo -e "Build complete!\n"
