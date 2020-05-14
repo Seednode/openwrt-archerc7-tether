@@ -63,7 +63,6 @@ fi
 # create base directory for account
 mkdir -p "$imagebuilderdir"
 
-
 # display log location
 echo -e "\nLogging all build output to $logfile\n"
 
@@ -106,6 +105,16 @@ echo "Generating system config files..."
 # store ssh public key for passwordless login
 cat <<'EOL' | tee "$workdir"/files/etc/dropbear/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSSJ5vfFH2j1MyCx/p/IERTIqaNWvfdLl6mR2T9GxwOEU5AwW6VCkKkp9GZOHepWSIz+/dHxUfLDY/zoFk6K2D8UcM6CIfnL0xFNn6uUK/3t/9/lJuUNuH682lmuePe+xRcdccb/3X9f24HyurWIQPZKu//HVV3AT7D/6d2BtDNE9nzpDQC2svXtLdqOpxSavyTEFFiEvvYtKduPO6ZkJyxk5u9HCYXsCOfXHjYtWc2EE+RQ37+QgzRBzOADm5m3OZxGlVKex+yjnPj74/sOr81jehbE6Kd9+07VmcIYy+VU7TCPX6V1Olw9Tyq7paon61TU7gu9yK9GUWUA8CaNU7 sinc@gate
+EOL
+
+# set login credentials
+cat <<'EOL' | tee "$basedir"/files/etc/shadow
+root:$1$1tqLilcw$GhODdAX1Ax60WMyJT.hGM/:18396:0:99999:7:::
+daemon:*:0:0:99999:7:::
+ftp:*:0:0:99999:7:::
+network:*:0:0:99999:7:::
+nobody:*:0:0:99999:7:::
+dnsmasq:x:0:0:99999:7:::
 EOL
 
 # create dnsmasq configs and disable win2k filtering (which breaks jabber/xmpp)
@@ -343,7 +352,7 @@ echo "Building OpenWRT image..."
 cd "$workdir" && \
 make image \
 PROFILE='archer-c7-v2' \
-PACKAGES='luci-ssl luci-app-sqm luci-app-statistics tmux iwinfo wpad hostapd-utils relayd luci-proto-relay -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
+PACKAGES='luci-ssl luci-app-statistics tmux iwinfo wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
 FILES=files && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
