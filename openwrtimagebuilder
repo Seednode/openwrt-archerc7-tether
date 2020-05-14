@@ -157,35 +157,6 @@ option synflood_protect '1'
 
 config include
 option path /etc/firewall.user
-
-config zone
-option name 'LAN'
-option family 'ipv4'
-option input 'ACCEPT'
-option forward 'ACCEPT'
-option output 'ACCEPT'
-option network 'lan MGMT'
-
-config zone
-option name 'WAN'
-option masq '1'
-option family 'ipv4'
-option network 'USB'
-option input 'ACCEPT'
-option forward 'ACCEPT'
-option output 'ACCEPT'
-
-config zone
-option name 'BRIDGE'
-option input 'ACCEPT'
-option forward 'ACCEPT'
-option output 'ACCEPT'
-option network 'LAN USB RELAY'
-
-config forwarding
-option src 'LAN'
-option dest 'WAN'
-option family 'ipv4'
 EOL
 
 # set ssh listen port to tcp/9022 on the wan and disable password login
