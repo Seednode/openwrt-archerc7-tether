@@ -108,7 +108,7 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSSJ5vfFH2j1MyCx/p/IERTIqaNWvfdLl6mR2T9Gxw
 EOL
 
 # set login credentials
-cat <<'EOL' | tee "$basedir"/files/etc/shadow
+cat <<'EOL' | tee "$workdir"/files/etc/shadow
 root:$1$1tqLilcw$GhODdAX1Ax60WMyJT.hGM/:18396:0:99999:7:::
 daemon:*:0:0:99999:7:::
 ftp:*:0:0:99999:7:::
