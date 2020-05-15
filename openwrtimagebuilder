@@ -251,23 +251,10 @@ option netmask '255.255.255.0'
 option type 'bridge'
 option ipv6 '0'
 
-config interface 'RELAY_USB'
+config interface 'RELAY'
 option proto 'relay'
 option ipaddr ''
 list network 'LAN'
-list network 'WAN_USB'
-
-config interface 'RELAY_WIFI_2'
-option proto 'relay'
-option ipaddr ''
-list network 'LAN'
-list network 'WAN_WIFI_2'
-
-config interface 'RELAY_WIFI_5'
-option proto 'relay'
-option ip addr ''
-list network 'LAN'
-list network 'WAN_WIFI_5'
 
 config interface 'WAN_USB'
 option ifname 'usb0'
@@ -275,12 +262,10 @@ option proto 'dhcp'
 option ipv6 '0'
 
 config interface 'WAN_WIFI_2'
-option ifname 'radio1'
 option proto 'dhcp'
 option ipv6 '0'
 
 config interface 'WAN_WIFI_5'
-option ifname 'radio0'
 option proto 'dhcp'
 option ipv6 '0'
 
@@ -328,7 +313,7 @@ option mode 'ap'
 option network 'MGMT'
 option wpa_disable_eapol_key_retries '1'
 
-config wifi-iface 'wifinet3'
+config wifi-iface 'wifinet2'
 option ssid 'Paranoia'
 option encryption 'psk2'
 option key 'ripripenable'
@@ -336,7 +321,7 @@ option device 'radio1'
 option mode 'sta'
 option network 'WAN_WIFI_2'
 
-config wifi-iface 'wifinet4'
+config wifi-iface 'wifinet3'
 option ssid 'Paranoia'
 option encryption 'psk2'
 option key 'ripripenable'
@@ -355,56 +340,72 @@ EOL
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
 
+# retrieve current relay ip address
+OLD_RELAY_IP="$(uci get network.RELAY.ipaddr)"
+
+# retrieve current relay interface
+OLD_RELAY_INTERFACE="$(uci get network.RELAY.network | awk '{print $2}')"
+
 # update 2.4ghz wifi tether
-OLD_WIFI_2_RELAY_IP="$(uci get network.RELAY_WIFI_2.ipaddr)"
 WIFI_2_IP="$(ip -f inet addr show wlan1 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_2_IP" = "" ]; then
 	echo "No 2.4GHz WiFi tether detected."
 else
 	echo "2.4GHz WiFi tether with address $WIFI_2_IP found."
-	NEW_WIFI_2_RELAY_IP="$WIFI_2_IP"
-	if [ "$NEW_WIFI_2_RELAY_IP" = "$OLD_WIFI_2_RELAY_IP" ]; then
-		echo "IP hasn't changed. Skipping address update."
-	else
-		echo "IP has changed. Updating to new address of $NEW_WIFI_2_RELAY_IP."
-		uci set network.RELAY_WIFI_2.ipaddr="$NEW_WIFI_2_RELAY_IP"
-		uci commit
-	fi
+	
+	# set relay interface ip address
+	NEW_RELAY_IP="$WIFI_2_IP"
+		
+	# set relay network devices
+	NEW_RELAY_INTERFACE="WAN_WIFI_2"
 fi
 
 # update 5ghz wifi tether
-OLD_WIFI_5_RELAY_IP="$(uci get network.RELAY_WIFI_5.ipaddr)"
 WIFI_5_IP="$(ip -f inet addr show wlan0 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_5_IP" = "" ]; then
-        echo "No 5GHz WiFi tether detected."
+	echo "No 5GHz WiFi tether detected."
 else
-        echo "5GHz WiFi tether with address $WIFI_5_IP found."
-        NEW_WIFI_5_RELAY_IP="$WIFI_5_IP"
-	if [ "$NEW_WIFI_5_RELAY_IP" = "$OLD_WIFI_5_RELAY_IP" ]; then
-	        echo "IP hasn't changed. Skipping address update."
-	else
-	        echo "IP has changed. Updating to new address of $NEW_WIFI_5_RELAY_IP."
-	        uci set network.RELAY_WIFI_5.ipaddr="$NEW_WIFI_5_RELAY_IP"
-	        uci commit
-	fi
+	echo "5GHz WiFi tether with address $WIFI_5_IP found."
+	
+	# set relay interface ip address
+	NEW_RELAY_IP="$WIFI_5_IP"
+
+	# set relay network devices
+	NEW_RELAY_INTERFACE="WAN_WIFI_5"
 fi
 
 # update usb tether
-OLD_USB_RELAY_IP="$(uci get network.RELAY_USB.ipaddr)"
 USB_IP="$(ip -f inet addr show usb0 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$USB_IP" = "" ]; then
-        echo "USB tether detected."
+	echo "No USB tether detected."
 else
-        echo "USB tether with address $USB_IP found."
-        NEW_USB_RELAY_IP="$USB_IP"
-	if [ "$NEW_USB_RELAY_IP" = "$OLD_USB_RELAY_IP" ]; then
-	        echo "IP hasn't changed. Skipping address update."
-	else
-	        echo "IP has changed. Updating to new address of $NEW_USB_RELAY_IP."
-	        uci set network.RELAY_USB.ipaddr="$NEW_USB_RELAY_IP"
-	        uci commit
-	fi
+	echo "USB tether with address $USB_IP found."
+	
+	# set relay interface ip address
+	NEW_RELAY_IP="$USB_IP"
+
+	# set relay network devices
+	NEW_RELAY_INTERFACE="WAN_USB"		
 fi
+
+# check if ip has changed
+if [ "$NEW_RELAY_IP" = "$OLD_RELAY_IP" ]; then
+	echo "IP hasn't changed. Skipping address update."
+else
+	echo "IP has changed. Updating to new address of $NEW_RELAY_IP."
+	uci set network.RELAY.ipaddr="$NEW_RELAY_IP"
+fi
+
+# check if interface has changed
+if [ "$NEW_RELAY_INTERFACE" = "$OLD_RELAY_INTERFACE" ]; then
+	echo "Interface hasn't changed. Skipping interface update."
+else
+	echo "Interface has changed. Updating to new interface $NEW_RELAY_INTERFACE."
+	uci set network.RELAY.network="LAN" "$NEW_RELAY_INTERFACE"
+fi
+
+# commit changes
+uci commit
 EOL
 
 # add root crontab to run the relayd address update script every minute
