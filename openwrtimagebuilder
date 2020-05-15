@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 
-## a basic script for building openwrt/lede images for
-## the TPLink Archer C7 v2 on ubuntu 18.04
-
-# wps pushbutton can be initiated either with the physical wps/reset button,
-# or by running `hostapd_cli wps_pbc` from the command line. you then have
-# two minutes to initiate the wps auth process on the end device
-
-# admin web interface can only be accessed via lan from address $subnet.254
+## a basic script for building openwrt images for
+## the TPLink Archer C7 v2 on ubuntu 20.04
 
 # recovery instructions:
 # set up tftpd server listening on 192.168.0.66 serving ArcherC7v2_tp_recovery.bin (stripped, non-boot)
