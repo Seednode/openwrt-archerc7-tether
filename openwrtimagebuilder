@@ -91,7 +91,7 @@ echo "Imagebuilder downloaded."
 # create directory for file overrides; this will serve as the effective / for any overwriting files
 # i.e. files/etc/dropbear/authorized_keys will be located at /etc/dropbear/authorized_keys in the final squashfs image
 echo "Creating required directories..."
-mkdir -p "$workdir"/files/etc/{config,dropbear}
+mkdir -p "$workdir"/files/etc/{config,dropbear}/
 mkdir -p "$workdir"/files/etc/rc.button
 mkdir -p "$workdir"/files/etc/init.d
 mkdir -p "$workdir"/files/etc/crontabs
