@@ -336,7 +336,7 @@ option device 'radio1'
 option mode 'sta'
 option network 'WAN_WIFI_2'
 
-config wif-iiface 'wifinet4'
+config wifi-iface 'wifinet4'
 option ssid 'Paranoia'
 option encryption 'psk2'
 option key 'ripripenable'
