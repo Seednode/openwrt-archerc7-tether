@@ -379,7 +379,6 @@ echo "Config files written."
 
 # fix permissions
 echo "Setting permissions for all modified directories..."
-chmod 0700 "$workdir"/files/etc/dropbear
 chmod 0755 "$workdir"/files/etc/rc.button/wps
 chmod 0755 "$workdir"/files/etc/init.d/relayaddr
 echo "Permissions set."
