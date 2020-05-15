@@ -401,7 +401,7 @@ if [ "$NEW_RELAY_INTERFACE" = "$OLD_RELAY_INTERFACE" ]; then
 	echo "Interface hasn't changed. Skipping interface update."
 else
 	echo "Interface has changed. Updating to new interface $NEW_RELAY_INTERFACE."
-	uci set network.RELAY.network="LAN" "$NEW_RELAY_INTERFACE"
+	uci set network.RELAY.network="LAN $NEW_RELAY_INTERFACE"
 fi
 
 # commit changes
