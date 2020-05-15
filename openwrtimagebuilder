@@ -91,7 +91,7 @@ echo "Imagebuilder downloaded."
 # create directory for file overrides; this will serve as the effective / for any overwriting files
 # i.e. files/etc/dropbear/authorized_keys will be located at /etc/dropbear/authorized_keys in the final squashfs image
 echo "Creating required directories..."
-mkdir -p "$workdir"/files/etc/{config,dropbear}/
+mkdir -p "$workdir"/files/etc/config
 mkdir -p "$workdir"/files/etc/rc.button
 mkdir -p "$workdir"/files/etc/init.d
 mkdir -p "$workdir"/files/etc/crontabs
@@ -101,11 +101,6 @@ echo "Finished creating directories."
 
 # begin generating config files
 echo "Generating system config files..."
-
-# store ssh public key for passwordless login
-cat <<'EOL' | tee "$workdir"/files/etc/dropbear/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSSJ5vfFH2j1MyCx/p/IERTIqaNWvfdLl6mR2T9GxwOEU5AwW6VCkKkp9GZOHepWSIz+/dHxUfLDY/zoFk6K2D8UcM6CIfnL0xFNn6uUK/3t/9/lJuUNuH682lmuePe+xRcdccb/3X9f24HyurWIQPZKu//HVV3AT7D/6d2BtDNE9nzpDQC2svXtLdqOpxSavyTEFFiEvvYtKduPO6ZkJyxk5u9HCYXsCOfXHjYtWc2EE+RQ37+QgzRBzOADm5m3OZxGlVKex+yjnPj74/sOr81jehbE6Kd9+07VmcIYy+VU7TCPX6V1Olw9Tyq7paon61TU7gu9yK9GUWUA8CaNU7 sinc@gate
-EOL
 
 # set login credentials
 cat <<'EOL' | tee "$workdir"/files/etc/shadow
