@@ -240,15 +240,7 @@ option type 'bridge'
 option proto 'static'
 option netmask '255.255.255.0'
 option ipaddr '192.168.0.1'
-list dns '1.1.1.1'
-list dns '8.8.8.8'
-list dns '9.9.9.9'
 option ifname 'eth1'
-option ipv6 '0'
-
-config interface 'USB'
-option ifname 'usb0'
-option proto 'dhcp'
 option ipv6 '0'
 
 config interface 'MGMT'
@@ -259,11 +251,38 @@ option netmask '255.255.255.0'
 option type 'bridge'
 option ipv6 '0'
 
-config interface 'RELAY'
+config interface 'RELAY_USB'
 option proto 'relay'
-option ipaddr '192.168.42.38'
+option ipaddr ''
 list network 'LAN'
-list network 'USB'
+list network 'WAN_USB'
+
+config interface 'RELAY_WIFI_2'
+option proto 'relay'
+option ipaddr ''
+list network 'LAN'
+list network 'WAN_WIFI_2'
+
+config interface 'RELAY_WIFI_5'
+option proto 'relay'
+option ip addr ''
+list network 'LAN'
+list network 'WAN_WIFI_5'
+
+config interface 'WAN_USB'
+option ifname 'usb0'
+option proto 'dhcp'
+option ipv6 '0'
+
+config interface 'WAN_WIFI_2'
+option ifname 'radio1'
+option proto 'dhcp'
+option ipv6 '0'
+
+config interface 'WAN_WIFI_5'
+ooption ifname 'radio0'
+option proto 'dhcp'
+option ipv6 '0'
 
 config switch
 option name 'switch0'
@@ -315,6 +334,15 @@ option encryption 'psk2'
 option key 'ripripenable'
 option device 'radio1'
 option mode 'sta'
+option network 'WAN_WIFI_2'
+
+config wif-iface 'wifinet3'
+option ssid 'Paranoia'
+option encryption 'psk2'
+option key 'ripripenable'
+option device 'radio0'
+option mode 'sta'
+option network 'WAN_WIFI_5'
 EOL
 
 # create an empty script for the wps trigger
@@ -327,38 +355,55 @@ EOL
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
 
-# store current relay ip, if any
-OLD_RELAY_IP="$(uci get network.RELAY.ipaddr)"
-
-# check for wifi tether
-WIFI_IP="$(ip -f inet addr show wlan1 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
-
-# if one exists, store wifi tether ip address
-if [ "$WIFI_IP" = "" ]; then
-	echo "No WiFi tether detected."
+# update 2.4ghz wifi tether
+OLD_WIFI_2_RELAY_IP="$(uci get network.RELAY_WIFI_2.ipaddr)"
+WIFI_2_IP="$(ip -f inet addr show wlan1 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "$WIFI_2_IP" = "" ]; then
+	echo "No 2.4GHz WiFi tether detected."
 else
-	echo "WiFi tether with address $WIFI_IP found."
-	NEW_RELAY_IP="$WIFI_IP"
+	echo "2.4GHz WiFi tether with address $WIFI_2_IP found."
+	NEW_WIFI_2_RELAY_IP="$WIFI_2_IP"
+	if [ "$NEW_WIFI_2_RELAY_IP" = "$OLD_WIFI_2_RELAY_IP" ]; then
+		echo "IP hasn't changed. Skipping address update."
+	else
+		echo "IP has changed. Updating to new address of $NEW_WIFI_2_RELAY_IP."
+		uci set network.RELAY_WIFI_2.ipaddr="$NEW_WIFI_2_RELAY_IP"
+		uci commit
+	fi
 fi
 
-# check for usb tether
+# update 5ghz wifi tether
+OLD_WIFI_5_RELAY_IP="$(uci get network.RELAY_WIFI_5.ipaddr)"
+WIFI_5_IP="$(ip -f inet addr show wlan0 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "$WIFI_5_IP" = "" ]; then
+        echo "No 5GHz WiFi tether detected."
+else
+        echo "5GHz WiFi tether with address $WIFI_5_IP found."
+        NEW_WIFI_5_RELAY_IP="$WIFI_5_IP"
+	if [ "$NEW_WIFI_5_RELAY_IP" = "$OLD_WIFI_5_RELAY_IP" ]; then
+	        echo "IP hasn't changed. Skipping address update."
+	else
+	        echo "IP has changed. Updating to new address of $NEW_WIFI_5_RELAY_IP."
+	        uci set network.RELAY_WIFI_5.ipaddr="$NEW_WIFI_5_RELAY_IP"
+	        uci commit
+	fi
+fi
+
+# update usb tether
+OLD_USB_RELAY_IP="$(uci get network.RELAY_USB.ipaddr)"
 USB_IP="$(ip -f inet addr show usb0 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
-
-# if one exists, store usb tether ip address
 if [ "$USB_IP" = "" ]; then
-	echo "No USB tether detected."
+        echo "USB tether detected."
 else
-	echo "USB tether with address $USB_IP found."
-	NEW_RELAY_IP="$USB_IP"
-fi
-
-# update relay ip if it has changed
-if [ "$NEW_RELAY_IP" = "$OLD_RELAY_IP" ]; then
-	echo "IP hasn't changed. Skipping address update."
-else
-	echo "IP has changed. Updating to new address of $NEW_RELAY_IP."
-	uci set network.RELAY.ipaddr="$NEW_RELAY_IP"
-	uci commit
+        echo "USB tether with address $USB_IP found."
+        NEW_USB_RELAY_IP="$USB_IP"
+	if [ "$NEW_USB_RELAY_IP" = "$OLD_USB_RELAY_IP" ]; then
+	        echo "IP hasn't changed. Skipping address update."
+	else
+	        echo "IP has changed. Updating to new address of $NEW_USB_RELAY_IP."
+	        uci set network.RELAY_USB.ipaddr="$NEW_USB_RELAY_IP"
+	        uci commit
+	fi
 fi
 EOL
 
