@@ -334,45 +334,57 @@ OLD_RELAY_IP="$(uci get network.RELAY.ipaddr)"
 OLD_RELAY_INTERFACE="$(uci get network.RELAY.network | awk '{print $2}')"
 
 # update 2.4ghz wifi tether
-WIFI_2_IP="$(ip -f inet addr show wlan1 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+WIFI_2_INTERFACE="wlan1"
+WIFI_2_IP="$(ip -f inet addr show $WIFI_2_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_2_IP" = "" ]; then
 	echo "No 2.4GHz WiFi tether detected."
 else
 	echo "2.4GHz WiFi tether with address $WIFI_2_IP found."
-	
+
 	# store relay interface ip address
 	NEW_RELAY_IP="$WIFI_2_IP"
-		
+
 	# store relay network device
 	NEW_RELAY_INTERFACE="WAN_WIFI_2"
+
+	# store expected interface argument for relayd
+	EXPECTED_INTERFACE="$WIFI_2_INTERFACE"
 fi
 
 # update 5ghz wifi tether
-WIFI_5_IP="$(ip -f inet addr show wlan0 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+WIFI_5_INTERFACE="wlan0"
+WIFI_5_IP="$(ip -f inet addr show $WIFI_5_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_5_IP" = "" ]; then
 	echo "No 5GHz WiFi tether detected."
 else
 	echo "5GHz WiFi tether with address $WIFI_5_IP found."
-	
+
 	# store relay interface ip address
 	NEW_RELAY_IP="$WIFI_5_IP"
 
 	# store relay network device
 	NEW_RELAY_INTERFACE="WAN_WIFI_5"
+
+	# store expected interface argument for relayd
+	EXPECTED_INTERFACE="$WIFI_5_INTERFACE"
 fi
 
 # update usb tether
-USB_IP="$(ip -f inet addr show usb0 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+USB_INTERFACE="usb0"
+USB_IP="$(ip -f inet addr show $USB_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$USB_IP" = "" ]; then
 	echo "No USB tether detected."
 else
 	echo "USB tether with address $USB_IP found."
-	
+
 	# store new relay interface ip address
 	NEW_RELAY_IP="$USB_IP"
 
 	# store new relay network device
-	NEW_RELAY_INTERFACE="WAN_USB"		
+	NEW_RELAY_INTERFACE="WAN_USB"
+
+	# store expected interface argument for relayd
+	EXPECTED_INTERFACE="$USB_INTERFACE"
 fi
 
 # check if ip has changed
@@ -406,11 +418,22 @@ if [ "$SHOULD_COMMIT" = "true" ]; then
 	# commit changes to interface and/or ip address
 	uci commit
 
-	# wait briefly
-	sleep 1
+	# queue relayd restart
+	SHOULD_RESTART="true"
+fi
 
+# if relayd is using the wrong interface, queue a restart
+if ! ps | grep "/usr/sbin/relayd -I br-LAN -I $EXPECTED_INTERFACE" 2>&1 >/dev/null; then
+	echo "Wrong interface selected in relayd. Restarting process."
+
+	# queue relayd restart
+	SHOULD_RESTART="true"
+fi
+
+# restart relayd if needed
+if [ "$SHOULD_RESTART" = "true" ]; then
 	# restart relayd to apply new interface and/or ip address
-	service relayd restart
+	/etc/init.d/relayd restart
 fi
 EOL
 
