@@ -151,6 +151,7 @@ option start '100'
 option leasetime '12h'
 option limit '150'
 option interface 'MGMT'
+option force '1'
 
 config odhcpd 'odhcpd'
 option maindhcp '0'
