@@ -243,14 +243,6 @@ option netmask '255.255.255.0'
 option ifname 'eth1'
 option ipv6 '0'
 
-config interface 'MGMT'
-option ifname 'eth0'
-option proto 'static'
-option ipaddr '192.168.5.1'
-option netmask '255.255.255.0'
-option type 'bridge'
-option ipv6 '0'
-
 config interface 'RELAY'
 option proto 'relay'
 option ipaddr ''
@@ -323,16 +315,6 @@ option device 'radio1'
 option mode 'sta'
 option network 'WAN_WIFI_2'
 option ifname 'wlan1'
-
-config wifi-iface 'wifinet2'
-option ssid 'Tether'
-option encryption 'psk2+ccmp'
-option key 'ripripenable'
-option device 'radio1'
-option mode 'ap'
-option network 'MGMT'
-option wpa_disable_eapol_key_retries '1'
-option ifname 'wlan2'
 EOL
 
 # create an empty script for the wps trigger
@@ -358,10 +340,10 @@ if [ "$WIFI_2_IP" = "" ]; then
 else
 	echo "2.4GHz WiFi tether with address $WIFI_2_IP found."
 	
-	# set relay interface ip address
+	# store relay interface ip address
 	NEW_RELAY_IP="$WIFI_2_IP"
 		
-	# set relay network devices
+	# store relay network device
 	NEW_RELAY_INTERFACE="WAN_WIFI_2"
 fi
 
@@ -372,10 +354,10 @@ if [ "$WIFI_5_IP" = "" ]; then
 else
 	echo "5GHz WiFi tether with address $WIFI_5_IP found."
 	
-	# set relay interface ip address
+	# store relay interface ip address
 	NEW_RELAY_IP="$WIFI_5_IP"
 
-	# set relay network devices
+	# store relay network device
 	NEW_RELAY_INTERFACE="WAN_WIFI_5"
 fi
 
@@ -386,10 +368,10 @@ if [ "$USB_IP" = "" ]; then
 else
 	echo "USB tether with address $USB_IP found."
 	
-	# set relay interface ip address
+	# store new relay interface ip address
 	NEW_RELAY_IP="$USB_IP"
 
-	# set relay network devices
+	# store new relay network device
 	NEW_RELAY_INTERFACE="WAN_USB"		
 fi
 
@@ -398,7 +380,12 @@ if [ "$NEW_RELAY_IP" = "$OLD_RELAY_IP" ]; then
 	echo "IP hasn't changed. Skipping address update."
 else
 	echo "IP has changed. Updating to new address of $NEW_RELAY_IP."
+
+	# set new relay interface ip address
 	uci set network.RELAY.ipaddr="$NEW_RELAY_IP"
+
+	# queue changes
+	SHOULD_COMMIT="true"
 fi
 
 # check if interface has changed
@@ -406,11 +393,22 @@ if [ "$NEW_RELAY_INTERFACE" = "$OLD_RELAY_INTERFACE" ]; then
 	echo "Interface hasn't changed. Skipping interface update."
 else
 	echo "Interface has changed. Updating to new interface $NEW_RELAY_INTERFACE."
+
+	# set new relay interface ip address
 	uci set network.RELAY.network="LAN $NEW_RELAY_INTERFACE"
+
+	# queue changes
+	SHOULD_COMMIT="true"
 fi
 
-# commit changes
-uci commit
+# commit changes if needed
+if [ "$SHOULD_COMMIT" = "true" ]
+	# commit changes to interface and/or ip address
+	uci commit
+
+	# restart relayd to apply new interface and/or ip address
+	service relayd restart
+fi
 EOL
 
 # add root crontab to run the relayd address update script every minute
