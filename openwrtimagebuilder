@@ -402,9 +402,12 @@ else
 fi
 
 # commit changes if needed
-if [ "$SHOULD_COMMIT" = "true" ]
+if [ "$SHOULD_COMMIT" = "true" ]; then
 	# commit changes to interface and/or ip address
 	uci commit
+
+	# wait briefly
+	sleep 1
 
 	# restart relayd to apply new interface and/or ip address
 	service relayd restart
