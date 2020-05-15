@@ -24,7 +24,7 @@
 
 # check if dependencies are installed; if not, error out
 # $ for dependency in "${dependencies[@]}"; do
-# $ 	sudo dpkg-query -W "$dependency" >/dev/null 2>&1 || { echo >&2 "$dependency is not installed. Please install it manually and re-run the script."; exit 1; }
+# $  sudo dpkg-query -W "$dependency" >/dev/null 2>&1 || { echo >&2 "$dependency is not installed. Please install it manually and re-run the script."; exit 1; }
 # $ done
 
 # fail in a sane manner
@@ -37,7 +37,7 @@ if [ "$#" -ne 0 ]; then
 fi
 
 # set hostname to first argument
-hostname="phonetest"
+hostname="tether"
 
 # set base directory
 basedir="$(pwd)/$hostname"
@@ -109,7 +109,7 @@ EOL
 
 # set login credentials
 cat <<'EOL' | tee "$workdir"/files/etc/shadow
-root:$1$1tqLilcw$GhODdAX1Ax60WMyJT.hGM/:18396:0:99999:7:::
+root:$1$Bi5SZzpW$o3ymak7u35zX.fuuGCjt2.:18396:0:99999:7:::
 daemon:*:0:0:99999:7:::
 ftp:*:0:0:99999:7:::
 network:*:0:0:99999:7:::
@@ -264,7 +264,6 @@ option ipv6 '0'
 list dns '1.1.1.1'
 list dns '8.8.8.8'
 list dns '9.9.9.9'
-option type 'bridge'
 
 config interface 'MGMT'
 option ifname 'eth0'
@@ -275,8 +274,8 @@ option netmask '255.255.255.0'
 config interface 'RELAY'
 option proto 'relay'
 option ipaddr '192.168.42.38'
-option network 'LAN'
-option network 'USB'
+list network 'LAN'
+list network 'USB'
 
 config switch
 option name 'switch0'
@@ -316,10 +315,11 @@ option legacy_rates '1'
 
 config wifi-iface 'wifinet1'
 option ssid 'Tether'
-option encryption 'none'
+option encryption 'psk2'
+option key 'ripripenable'
 option device 'radio0'
 option mode 'ap'
-option network 'lan'
+option network 'MGMT'
 
 config wifi-iface 'wifinet2'
 option ssid 'Paranoia'
