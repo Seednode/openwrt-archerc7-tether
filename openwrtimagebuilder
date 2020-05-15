@@ -170,7 +170,7 @@ EOL
 # set up a uhttpd instance listening on 443/tcp on the mgmt network
 cat <<EOL | tee "$workdir"/files/etc/config/uhttpd
 config uhttpd 'luci'
-list listen_https '192.168.5.1:443'
+list listen_https '0.0.0.0:443'
 option home '/www'
 option rfc1918_filter '1'
 option max_requests '3'
@@ -280,7 +280,7 @@ option proto 'dhcp'
 option ipv6 '0'
 
 config interface 'WAN_WIFI_5'
-ooption ifname 'radio0'
+option ifname 'radio0'
 option proto 'dhcp'
 option ipv6 '0'
 
@@ -336,7 +336,7 @@ option device 'radio1'
 option mode 'sta'
 option network 'WAN_WIFI_2'
 
-config wif-iface 'wifinet3'
+config wif-iiface 'wifinet3'
 option ssid 'Paranoia'
 option encryption 'psk2'
 option key 'ripripenable'
