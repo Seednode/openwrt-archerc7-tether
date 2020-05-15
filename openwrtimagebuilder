@@ -365,6 +365,7 @@ if [ "$NEW_RELAY_IP" = "$OLD_RELAY_IP" ]; then
 else
 	echo "IP has changed. Updating to new address of $NEW_RELAY_IP."
 	uci set network.RELAY.ipaddr="$NEW_RELAY_IP"
+	uci commit
 fi
 EOL
 
