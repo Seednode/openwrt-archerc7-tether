@@ -335,6 +335,49 @@ cat <<'EOL' | tee "$workdir"/files/etc/rc.button/wps
 # do nothing on wps button press
 EOL
 
+# create relayd address update script
+cat <<'EOL' | tee "$workdir"/files/etc/init.d/relayaddr
+#!/usr/bin/env ash
+
+# store current relay ip, if any
+OLD_RELAY_IP="$(uci get network.RELAY.ipaddr)"
+
+# check for wifi tether
+WIFI_IP="$(ip -f inet addr show wlan1 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+
+# if one exists, store wifi tether ip address
+if [ "$WIFI_IP" = "" ]; then
+	echo "No WiFi tether detected."
+else
+	echo "WiFi tether with address $WIFI_IP found."
+	NEW_RELAY_IP="$WIFI_IP"
+fi
+
+# check for usb tether
+USB_IP="$(ip -f inet addr show usb0 | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+
+# if one exists, store usb tether ip address
+if [ "$USB_IP" = "" ]; then
+	echo "No USB tether detected."
+else
+	echo "USB tether with address $USB_IP found."
+	NEW_RELAY_IP="$USB_IP"
+fi
+
+# update relay ip if it has changed
+if [ "$NEW_RELAY_IP" = "$OLD_RELAY_IP" ]; then
+	echo "IP hasn't changed. Skipping address update."
+else
+	echo "IP has changed. Updating to new address of $NEW_RELAY_IP."
+	uci set network.RELAY.ipaddr="$NEW_RELAY_IP"
+fi
+EOL
+
+# add root crontab to run the relayd address update script every minute
+cat <<'EOL' | tee "$workdir"/files/etc/crontabs/root
+* * * * * /etc/init.d/relayaddr
+EOL
+
 # finished writing config files
 echo "Config files written."
 
@@ -343,6 +386,7 @@ echo "Setting permissions for all modified directories..."
 chmod 0700 "$workdir"/files/etc/dropbear
 chmod 0600 "$workdir"/files/etc/dropbear/authorized_keys
 chmod 0755 "$workdir"/files/etc/rc.button/wps
+chmod 0755 "$workdir"/files/etc/init.d/relayaddr
 echo "Permissions set."
 
 # build the image; the output will be located in $basedir/bin/targets/ar71xx/generic/
