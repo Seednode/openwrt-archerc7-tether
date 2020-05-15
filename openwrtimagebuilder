@@ -11,7 +11,7 @@
 
 # recovery instructions:
 # set up tftpd server listening on 192.168.0.66 serving ArcherC7v2_tp_recovery.bin (stripped, non-boot)
-# available at https://cdn.seednode.co/misc/ArcherC7v2_tp_recovery.bin
+# available at https://cdn.seedno.de/misc/ArcherC7v2_tp_recovery.bin
 # plug ethernet cable into LAN1 on Archer C7, unplugging any cable in WAN port
 # power up router, then immediately press and hold the WPS/Reset button until the WPS light turns on
 # wait ~2 minutes for router to complete reset
@@ -198,7 +198,7 @@ option days '3650'
 option bits '1024'
 option country 'US'
 option state 'Minnesota'
-option location 'Rosemount'
+option location 'Minneapolis'
 option commonname 'OpenWRT'
 EOL
 
@@ -311,7 +311,6 @@ option path 'platform/qca955x_wmac'
 option htmode 'HT20'
 option txpower '23'
 option country 'US'
-option legacy_rates '1'
 
 config wifi-iface 'wifinet1'
 option ssid 'Tether'
