@@ -540,9 +540,9 @@ $ssid = escapeshellarg($_POST["ssid"]);
 $psk = escapeshellarg($_POST["psk"]);
 $band = $_POST["band"];
 
-// if psk contains spaces or non-printable characters, error out
-if (!ctype_graph($psk)) {
-  exit("PSK contains whitespace. Not updating.");
+// if ssid contains non-printable characters, error out
+if (!ctype_print($ssid)) {
+  exit("SSID contains invalid characters. Not updating.");
 }
 
 // if ssid is empty or longer than 32 characters, error out
@@ -552,6 +552,16 @@ if (strlen($ssid) == 2) {
   exit("SSID is longer than 32 characters. Not updating.");
 }
 
+// if ssid contains a comma, error out
+if (strpos($ssid, ',') !== false) {
+  exit("SSID contains invalid characters. Not updating.");
+}
+
+// if psk contains spaces or non-printable characters, error out
+if (!ctype_graph($psk)) {
+  exit("PSK contains invalid characters. Not updating.");
+}
+
 // if psk is empty, shorter than 8 characters, or longer than 63, error out
 if (strlen($psk) == 2) {
   exit("No PSK provided. Not updating.");
@@ -559,6 +569,11 @@ if (strlen($psk) == 2) {
   exit("PSK is shorter than 8 characters. Not updating.");
 } elseif (strlen($psk) > 65) {
   exit("PSK is longer than 63 characters. Not updating.");
+}
+
+// if psk contains a comma, error out
+if (strpos($psk, ',') !== false) {
+  exit("PSK contains invalid characters. Not updating.");
 }
 
 // select which band to modify
