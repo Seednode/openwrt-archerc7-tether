@@ -517,7 +517,7 @@ cat <<'EOL' | tee "$workdir"/files/www/wifi.html
 <html>
 <body>
 
-<form action="test.php" method="post">
+<form action="wifi.php" method="post">
   Band: <select name="band">
     <option value="2">2.4GHz</option>
     <option value="5">5GHz</option>
