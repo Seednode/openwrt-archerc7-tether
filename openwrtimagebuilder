@@ -97,6 +97,7 @@ mkdir -p "$workdir"/files/etc/config
 mkdir -p "$workdir"/files/etc/rc.button
 mkdir -p "$workdir"/files/etc/init.d
 mkdir -p "$workdir"/files/etc/crontabs
+mkdir -p "$workdir"/files/etc/uci-defaults
 
 # finished creating directories
 echo "Finished creating directories."
@@ -486,41 +487,31 @@ if [ "$SHOULD_RESTART" = "true" ]; then
 fi
 EOL
 
-# create usbmuxd launch script
-cat <<'EOL' | tee "$workdir"/files/etc/init.d/usbmux
-#!/usr/bin/env ash
-
-# check if device eth2 shows up; if so, an iPhone is connected and the kernel module is loaded
-if ! ip link show eth2 >/dev/null 2>&1; then
-	echo "No iPhone USB tether detected. Exiting..."
-
-	# if no iphone is found, kill usbmuxd
-	if pgrep usbmux >/dev/null 2>&1; then
-		echo "usbmuxd is still running. Stopping process."
-		USBMUXD_PID="$(pgrep usbmuxd)"
-		kill -9 "$USBMUXD_PID"
-	fi
-
-	# exit with an error code
-	exit 1
-else
-	echo "iPhone USB tether detected."
-fi
-
-# check if usbmuxd is running; if not, start it
-if pgrep usbmuxd >/dev/null 2>&1; then
-	echo "usbmuxd already running. Exiting..."
-	exit 1
-else
-	echo "usbmuxd is not running. Starting..."
-	/usb/sbin/usbmuxd -v
-fi
-EOL
-
 # add root crontab to run the relayd address update and usbmuxd start scripts every minute
 cat <<'EOL' | tee "$workdir"/files/etc/crontabs/root
 * * * * * /etc/init.d/relayaddr
-* * * * * /etc/init.d/usbmux
+EOL
+
+# create usbmuxd launch script
+cat <<'EOL' | tee "$workdir"/files/etc/init.d/usbmux
+#!/bin/sh /etc/rc.common
+
+START=10
+STOP=15
+
+start() {
+        /usr/sbin/usbmuxd -v
+}
+
+stop() {
+        kill -9 "$(pgrep usbmuxd)"
+}
+EOL
+
+# add uci-defaults script to enable usbmuxd service
+cat <<'EOL' | tee "$workdir"/files/etc/uci-defaults/usbmux
+#!/bin/sh
+/etc/init.d/usbmux enable
 EOL
 
 # finished writing config files
@@ -531,6 +522,7 @@ echo "Setting permissions for all modified directories..."
 chmod 0755 "$workdir"/files/etc/rc.button/wps
 chmod 0755 "$workdir"/files/etc/init.d/relayaddr
 chmod 0755 "$workdir"/files/etc/init.d/usbmux
+chmod 0755 "$workdir"/files/etc/uci-defaults/usbmux
 echo "Permissions set."
 
 # build the image; the output will be located in $basedir/bin/targets/ar71xx/generic/
