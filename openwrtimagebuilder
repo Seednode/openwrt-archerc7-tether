@@ -19,6 +19,15 @@
 # usb0   - Android USB tether
 # eth2   - iPhone USB tether
 
+# switch0 ports
+# Port 0: LAN CPU
+# Port 1: WAN
+# Port 2: LAN 1
+# Port 3: LAN 2
+# Port 4: LAN 3
+# Port 5: LAN 4
+# Port 6: WAN CPU
+
 # when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
 
 ## install all dependencies (uncomment and run script as root/sudo if needed)
@@ -98,6 +107,7 @@ mkdir -p "$workdir"/files/etc/rc.button
 mkdir -p "$workdir"/files/etc/init.d
 mkdir -p "$workdir"/files/etc/crontabs
 mkdir -p "$workdir"/files/etc/uci-defaults
+mkdir -p "$workdir"/files/www
 
 # finished creating directories
 echo "Finished creating directories."
@@ -204,6 +214,7 @@ option network_timeout '30'
 option http_keepalive '20'
 option tcp_keepalive '1'
 option ubus_prefix '/ubus'
+list interpreter ".php=/usr/bin/php-cgi"
 
 config cert 'px5g'
 option days '3650'
@@ -514,6 +525,27 @@ cat <<'EOL' | tee "$workdir"/files/etc/uci-defaults/usbmux
 /etc/init.d/usbmux enable
 EOL
 
+# add sample php script for updating ssid and password (needs to be rewritten to perform input validation)
+cat <<'EOL' | tee "$workdir"/files/www/wifi.php
+<html>
+<body>
+
+<form action="" method="post">
+SSID: <input type="text" name="ssid"><br />
+PSK: <input type="text" name="psk"><br />
+<input type="submit">
+</form>
+
+<?php
+shell_exec('uci set wireless.wifinet0.ssid='.$_POST["ssid"]);
+shell_exec('uci set wireless.wifinet0.key='.$_POST["psk"]);
+shell_exec('uci commit');
+?>
+
+</body>
+</html>
+EOL
+
 # finished writing config files
 echo "Config files written."
 
@@ -532,7 +564,7 @@ echo "Building OpenWRT image..."
 cd "$workdir" && \
 make image \
 PROFILE='archer-c7-v2' \
-PACKAGES='luci-ssl luci-app-statistics tmux iwinfo wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
+PACKAGES='luci-ssl luci-app-statistics php7 php7-cgi tmux iwinfo wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
 FILES=files && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
