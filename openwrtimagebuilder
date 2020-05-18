@@ -496,8 +496,8 @@ EOL
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/usbmux
 #!/bin/sh /etc/rc.common
 
-START=10
-STOP=15
+START=30
+STOP=60
 
 start() {
         /usr/sbin/usbmuxd -v
