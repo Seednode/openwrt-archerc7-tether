@@ -56,7 +56,6 @@ release="19.07.2"
 version="openwrt-imagebuilder-$release-ar71xx-generic.Linux-x86_64"
 tarball="https://downloads.openwrt.org/releases/$release/targets/ar71xx/generic/$version.tar.xz"
 
-
 # delete any old builds if they exist
 if [ -d "$imagebuilderdir/$version" ]; then
 	echo -e "\nRemoving old imagebuilder files..." >> "$logfile" 2>&1
@@ -139,19 +138,19 @@ config dhcp 'LAN'
 option interface 'LAN'
 option ignore '1'
 
-config dhcp 'WAN1'
+config dhcp 'WAN_ANDROID_USB'
 option interface 'WAN_ANDROID_USB'
 option ignore '1'
 
-config dhcp 'WAN2'
+config dhcp 'WAN_IPHONE_USB'
 option interface 'WAN_IPHONE_USB'
 option ignore '1'
 
-config dhcp 'WAN3'
+config dhcp 'WAN_WIFI_2'
 option interface 'WAN_WIFI_2'
 option ignore '1'
 
-config dhcp 'WAN4'
+config dhcp 'WAN_WIFI_5'
 option interface 'WAN_WIFI_5'
 option ignore '1'
 
