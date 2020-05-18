@@ -142,7 +142,7 @@ option resolvfile '/tmp/resolv.conf.auto'
 option localservice '1'
 option nonwildcard '0'
 option filterwin2k '0'
-option nonegcache '1'1
+option nonegcache '1'
 option sequential_ip '1'
 
 config dhcp 'LAN'
