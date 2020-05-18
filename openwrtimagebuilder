@@ -579,8 +579,10 @@ if (strpos($psk, ',') !== false) {
 // select which band to modify
 if ("$band" == "5") {
   $wifinet = "wifinet0";
+  $wifiradio = "radio0";
 } elseif ("$band" == "2") {
   $wifinet = "wifinet1";
+  $wifiradio = "radio1";
 } else {
   exit("No valid wireless band provided. Not updating.");
 }
@@ -589,6 +591,9 @@ if ("$band" == "5") {
 shell_exec('uci set wireless.'.$wifinet.'.ssid='.$ssid);
 shell_exec('uci set wireless.'.$wifinet.'.key='.$psk);
 shell_exec('uci commit');
+
+// restart radio
+shell_exec('wifi reload '.$wifiradio);
 
 // report success
 echo "Submitted changes successfully.";
