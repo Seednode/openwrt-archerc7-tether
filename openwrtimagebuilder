@@ -263,6 +263,12 @@ option netmask '255.255.255.0'
 option ifname 'eth1'
 option ipv6 '0'
 
+config interface 'MGMT'
+option ifname 'eth0'
+option proto 'static'
+option ipaddr '192.168.5.1'
+option netmask '255.255.255.0'
+
 config interface 'RELAY'
 option proto 'relay'
 option ipaddr ''
@@ -524,7 +530,7 @@ echo "Config files written."
 echo "Setting permissions for all modified directories..."
 chmod 0755 "$workdir"/files/etc/rc.button/wps
 chmod 0755 "$workdir"/files/etc/init.d/relayaddr
-chmod 0755 "$workdir"/files/etc/init.d/relayaddr
+chmod 0755 "$workdir"/files/etc/init.d/usbmux
 echo "Permissions set."
 
 # build the image; the output will be located in $basedir/bin/targets/ar71xx/generic/
