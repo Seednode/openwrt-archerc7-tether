@@ -139,8 +139,20 @@ config dhcp 'LAN'
 option interface 'LAN'
 option ignore '1'
 
-config dhcp 'WAN'
-option interface 'USB'
+config dhcp 'WAN1'
+option interface 'WAN_ANDROID_USB'
+option ignore '1'
+
+config dhcp 'WAN2'
+option interface 'WAN_IPHONE_USB'
+option ignore '1'
+
+config dhcp 'WAN3'
+option interface 'WAN_WIFI_2'
+option ignore '1'
+
+config dhcp 'WAN4'
+option interface 'WAN_WIFI_5'
 option ignore '1'
 
 config dhcp 'MGMT'
@@ -257,8 +269,13 @@ option proto 'relay'
 option ipaddr ''
 list network 'LAN'
 
-config interface 'WAN_USB'
+config interface 'WAN_ANDROID_USB'
 option ifname 'usb0'
+option proto 'dhcp'
+option ipv6 '0'
+
+config interface 'WAN_IPHONE_USB'
+option ifname 'eth2'
 option proto 'dhcp'
 option ipv6 '0'
 
@@ -378,22 +395,40 @@ else
 	EXPECTED_INTERFACE="$WIFI_5_INTERFACE"
 fi
 
-# update usb tether
-USB_INTERFACE="usb0"
-USB_IP="$(ip -f inet addr show $USB_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
-if [ "$USB_IP" = "" ]; then
-	echo "No USB tether detected."
+# update android usb tether
+USB_ANDROID_INTERFACE="usb0"
+USB_ANDROID_IP="$(ip -f inet addr show $USB_ANDROID_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "$USB_ANDROID_IP" = "" ]; then
+	echo "No USB Android tether detected."
 else
-	echo "USB tether with address $USB_IP found."
+	echo "USB Android tether with address $USB_ANDROID_IP found."
 
 	# store new relay interface ip address
-	NEW_RELAY_IP="$USB_IP"
+	NEW_RELAY_IP="$USB_ANDROID_IP"
 
 	# store new relay network device
-	NEW_RELAY_INTERFACE="WAN_USB"
+	NEW_RELAY_INTERFACE="WAN_ANDROID_USB"
 
 	# store expected interface argument for relayd
-	EXPECTED_INTERFACE="$USB_INTERFACE"
+	EXPECTED_INTERFACE="$USB_ANDROID_INTERFACE"
+fi
+
+# update iphone usb tether
+USB_IPHONE_INTERFACE="eth2"
+USB_IPHONE_IP="$(ip -f inet addr show $USB_IPHONE_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "$USB_IPHONE_IP" = "" ]; then
+	echo "No USB iPhone tether detected."
+else
+	echo "USB iPhone tether with address $USB_IPHONE_IP found."
+
+	# store new relay interface ip address
+	NEW_RELAY_IP="$USB_IPHONE_IP"
+
+	# store new relay network device
+	NEW_RELAY_INTERFACE="WAN_IPHONE_USB"
+
+	# store expected interface argument for relayd
+	EXPECTED_INTERFACE="$USB_IPHONE_INTERFACE"
 fi
 
 # check if ip has changed
