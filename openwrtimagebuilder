@@ -10,6 +10,15 @@
 # power up router, then immediately press and hold the WPS/Reset button until the WPS light turns on
 # wait ~2 minutes for router to complete reset
 
+# interfaces
+# eth0   - Management port
+# eth1   - LAN switch
+# br-LAN - LAN bridge
+# wlan0  - 5GHz WiFi tether
+# wlan1  - 2.4GHz WiFi tether
+# usb0   - Android USB tether
+# eth2   - iPhone USB tether
+
 # when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
 
 ## install all dependencies (uncomment and run script as root/sudo if needed)
