@@ -11,8 +11,8 @@
 # wait ~2 minutes for router to complete reset
 
 # interfaces
-# eth0   - Management port
-# eth1   - LAN switch
+# eth0   - LAN (bridged)
+# eth1   - LAN (bridged)
 # br-LAN - LAN bridge
 # wlan0  - 5GHz WiFi tether
 # wlan1  - 2GHz WiFi tether
@@ -20,13 +20,13 @@
 # eth2   - iPhone USB tether
 
 # switch0 ports
-# Port 0: LAN CPU
+# Port 0: LAN CPU(?)
 # Port 1: WAN
 # Port 2: LAN 1
 # Port 3: LAN 2
 # Port 4: LAN 3
 # Port 5: LAN 4
-# Port 6: WAN CPU
+# Port 6: WAN CPU(?)
 
 # when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
 
