@@ -165,13 +165,6 @@ config dhcp 'WAN_WIFI_5'
 option interface 'WAN_WIFI_5'
 option ignore '1'
 
-config dhcp 'MGMT'
-option start '100'
-option leasetime '12h'
-option limit '150'
-option interface 'MGMT'
-option force '1'
-
 config odhcpd 'odhcpd'
 option maindhcp '0'
 option leasefile '/tmp/hosts/odhcpd'
@@ -272,14 +265,8 @@ option type 'bridge'
 option proto 'static'
 option ipaddr '192.168.0.1'
 option netmask '255.255.255.0'
-option ifname 'eth1'
+option ifname 'eth0 eth1'
 option ipv6 '0'
-
-config interface 'MGMT'
-option ifname 'eth0'
-option proto 'static'
-option ipaddr '192.168.5.1'
-option netmask '255.255.255.0'
 
 config interface 'RELAY'
 option proto 'relay'
@@ -342,18 +329,18 @@ option txpower '23'
 option country 'US'
 
 config wifi-iface 'wifinet0'
-option ssid 'Paranoia'
+option ssid ''
 option encryption 'psk2'
-option key 'ripripenable'
+option key ''
 option device 'radio0'
 option mode 'sta'
 option network 'WAN_WIFI_5'
 option ifname 'wlan0'
 
 config wifi-iface 'wifinet1'
-option ssid 'Paranoia'
+option ssid ''
 option encryption 'psk2'
-option key 'ripripenable'
+option key ''
 option device 'radio1'
 option mode 'sta'
 option network 'WAN_WIFI_2'
@@ -498,12 +485,12 @@ if [ "$SHOULD_RESTART" = "true" ]; then
 fi
 EOL
 
-# add root crontab to run the relayd address update and usbmuxd start scripts every minute
+# add root crontab to run the relayd address update every minute
 cat <<'EOL' | tee "$workdir"/files/etc/crontabs/root
 * * * * * /etc/init.d/relayaddr
 EOL
 
-# create usbmuxd launch script
+# create usbmuxd launch script for iphone tether detection
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/usbmux
 #!/bin/sh /etc/rc.common
 
