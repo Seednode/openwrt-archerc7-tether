@@ -15,7 +15,7 @@
 # eth1   - LAN (bridged)
 # br-LAN - LAN bridge
 # wlan0  - 5GHz WiFi tether
-# wlan1  - 2GHz WiFi tether
+# wlan1  - 2.4GHz WiFi tether
 # usb0   - Android USB tether
 # eth2   - iPhone USB tether
 
@@ -517,9 +517,18 @@ cat <<'EOL' | tee "$workdir"/files/www/wifi.html
 <html>
 <body>
 
+<form action="scan.php" method="post">
+<h3>Scan for nearby SSIDs</h3>
+  Band: <select name="band">
+    <option value="2.4">2.4GHz</option>
+    <option value="5">5GHz</option>
+  </select>
+  <input type="submit">
+</form>
+
 <form action="wifi.php" method="post">
   Band: <select name="band">
-    <option value="2">2.4GHz</option>
+    <option value="2.4">2.4GHz</option>
     <option value="5">5GHz</option>
   </select><br />
   SSID: <input type="text" name="ssid"><br />
@@ -580,7 +589,7 @@ if (strpos($psk, ',') !== false) {
 if ("$band" == "5") {
   $wifinet = "wifinet0";
   $wifiradio = "radio0";
-} elseif ("$band" == "2") {
+} elseif ("$band" == "2.4") {
   $wifinet = "wifinet1";
   $wifiradio = "radio1";
 } else {
@@ -598,6 +607,30 @@ shell_exec('wifi up '.$wifiradio);
 
 // report success
 echo "Submitted changes successfully.";
+
+?>
+EOL
+
+# add php script for scanning nearby ssids
+cat <<'EOL' | tee "$workdir"/files/www/scan.php
+<?php
+
+// initialize variables with easier to read names
+$band = $_POST["band"];
+
+// select which band to scan on
+if ("$band" == "5") {
+  $wifiradio = "radio0";
+} elseif ("$band" == "2.4") {
+  $wifiradio = "radio1";
+} else {
+  exit("No valid wireless band provided. Not updating.");
+}
+
+// fetch and parse list of available ssids
+$ssids = shell_exec('iwinfo '.$wifiradio.' scan | grep ESSID | sed \'s/\"//g\' | awk \'{print $2}\' | awk \'{$1=$1;print}\' | uniq');
+echo "<b>Nearby ".$band."GHz SSIDs:</b>";
+echo "<pre>$ssids</pre>";
 
 ?>
 EOL
