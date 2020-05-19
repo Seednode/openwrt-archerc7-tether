@@ -593,7 +593,8 @@ shell_exec('uci set wireless.'.$wifinet.'.key='.$psk);
 shell_exec('uci commit');
 
 // restart radio
-shell_exec('wifi reload '.$wifiradio);
+shell_exec('wifi down '.$wifiradio);
+shell_exec('wifi up '.$wifiradio);
 
 // report success
 echo "Submitted changes successfully.";
