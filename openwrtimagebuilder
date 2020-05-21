@@ -44,8 +44,8 @@ set -eo pipefail
 
 # make sure the correct number of arguments are passed; if not, output syntax and exit
 if [ "$#" -ne 0 ]; then
-	echo -e "\nUsage: openwrt_image_builder.sh\n"
-	exit 1
+  echo -e "\nUsage: openwrt_image_builder.sh\n"
+  exit 1
 fi
 
 # set hostname to first argument
@@ -67,8 +67,8 @@ tarball="https://downloads.openwrt.org/releases/$release/targets/ar71xx/generic/
 
 # delete any old builds if they exist
 if [ -d "$imagebuilderdir/$version" ]; then
-	echo -e "\nRemoving old imagebuilder files..." >> "$logfile" 2>&1
-	rm -rf "$imagebuilderdir/$version"
+  echo -e "\nRemoving old imagebuilder files..." >> "$logfile" 2>&1
+  rm -rf "$imagebuilderdir/$version"
 fi
 
 # create base directory for account
@@ -367,121 +367,121 @@ OLD_RELAY_INTERFACE="$(uci get network.RELAY.network | awk '{print $2}')"
 WIFI_2_INTERFACE="wlan1"
 WIFI_2_IP="$(ip -f inet addr show $WIFI_2_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_2_IP" = "" ]; then
-	echo "No 2.4GHz WiFi tether detected."
+  echo "No 2.4GHz WiFi tether detected."
 else
-	echo "2.4GHz WiFi tether with address $WIFI_2_IP found."
+  echo "2.4GHz WiFi tether with address $WIFI_2_IP found."
 
-	# store relay interface ip address
-	NEW_RELAY_IP="$WIFI_2_IP"
+  # store relay interface ip address
+  NEW_RELAY_IP="$WIFI_2_IP"
 
-	# store relay network device
-	NEW_RELAY_INTERFACE="WAN_WIFI_2"
+  # store relay network device
+  NEW_RELAY_INTERFACE="WAN_WIFI_2"
 
-	# store expected interface argument for relayd
-	EXPECTED_INTERFACE="$WIFI_2_INTERFACE"
+  # store expected interface argument for relayd
+  EXPECTED_INTERFACE="$WIFI_2_INTERFACE"
 fi
 
 # update 5ghz wifi tether
 WIFI_5_INTERFACE="wlan0"
 WIFI_5_IP="$(ip -f inet addr show $WIFI_5_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_5_IP" = "" ]; then
-	echo "No 5GHz WiFi tether detected."
+  echo "No 5GHz WiFi tether detected."
 else
-	echo "5GHz WiFi tether with address $WIFI_5_IP found."
+  echo "5GHz WiFi tether with address $WIFI_5_IP found."
 
-	# store relay interface ip address
-	NEW_RELAY_IP="$WIFI_5_IP"
+  # store relay interface ip address
+  NEW_RELAY_IP="$WIFI_5_IP"
 
-	# store relay network device
-	NEW_RELAY_INTERFACE="WAN_WIFI_5"
+  # store relay network device
+  NEW_RELAY_INTERFACE="WAN_WIFI_5"
 
-	# store expected interface argument for relayd
-	EXPECTED_INTERFACE="$WIFI_5_INTERFACE"
+  # store expected interface argument for relayd
+  EXPECTED_INTERFACE="$WIFI_5_INTERFACE"
 fi
 
 # update android usb tether
 USB_ANDROID_INTERFACE="usb0"
 USB_ANDROID_IP="$(ip -f inet addr show $USB_ANDROID_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$USB_ANDROID_IP" = "" ]; then
-	echo "No USB Android tether detected."
+  echo "No USB Android tether detected."
 else
-	echo "USB Android tether with address $USB_ANDROID_IP found."
+  echo "USB Android tether with address $USB_ANDROID_IP found."
 
-	# store new relay interface ip address
-	NEW_RELAY_IP="$USB_ANDROID_IP"
+  # store new relay interface ip address
+  NEW_RELAY_IP="$USB_ANDROID_IP"
 
-	# store new relay network device
-	NEW_RELAY_INTERFACE="WAN_ANDROID_USB"
+  # store new relay network device
+  NEW_RELAY_INTERFACE="WAN_ANDROID_USB"
 
-	# store expected interface argument for relayd
-	EXPECTED_INTERFACE="$USB_ANDROID_INTERFACE"
+  # store expected interface argument for relayd
+  EXPECTED_INTERFACE="$USB_ANDROID_INTERFACE"
 fi
 
 # update iphone usb tether
 USB_IPHONE_INTERFACE="eth2"
 USB_IPHONE_IP="$(ip -f inet addr show $USB_IPHONE_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$USB_IPHONE_IP" = "" ]; then
-	echo "No USB iPhone tether detected."
+  echo "No USB iPhone tether detected."
 else
-	echo "USB iPhone tether with address $USB_IPHONE_IP found."
+  echo "USB iPhone tether with address $USB_IPHONE_IP found."
 
-	# store new relay interface ip address
-	NEW_RELAY_IP="$USB_IPHONE_IP"
+  # store new relay interface ip address
+  NEW_RELAY_IP="$USB_IPHONE_IP"
 
-	# store new relay network device
-	NEW_RELAY_INTERFACE="WAN_IPHONE_USB"
+  # store new relay network device
+  NEW_RELAY_INTERFACE="WAN_IPHONE_USB"
 
-	# store expected interface argument for relayd
-	EXPECTED_INTERFACE="$USB_IPHONE_INTERFACE"
+  # store expected interface argument for relayd
+  EXPECTED_INTERFACE="$USB_IPHONE_INTERFACE"
 fi
 
 # check if ip has changed
 if [ "$NEW_RELAY_IP" = "$OLD_RELAY_IP" ]; then
-	echo "IP hasn't changed. Skipping address update."
+  echo "IP hasn't changed. Skipping address update."
 else
-	echo "IP has changed. Updating to new address of $NEW_RELAY_IP."
+  echo "IP has changed. Updating to new address of $NEW_RELAY_IP."
 
-	# set new relay interface ip address
-	uci set network.RELAY.ipaddr="$NEW_RELAY_IP"
+  # set new relay interface ip address
+  uci set network.RELAY.ipaddr="$NEW_RELAY_IP"
 
-	# queue changes
-	SHOULD_COMMIT="true"
+  # queue changes
+  SHOULD_COMMIT="true"
 fi
 
 # check if interface has changed
 if [ "$NEW_RELAY_INTERFACE" = "$OLD_RELAY_INTERFACE" ]; then
-	echo "Interface hasn't changed. Skipping interface update."
+  echo "Interface hasn't changed. Skipping interface update."
 else
-	echo "Interface has changed. Updating to new interface $NEW_RELAY_INTERFACE."
+  echo "Interface has changed. Updating to new interface $NEW_RELAY_INTERFACE."
 
-	# set new relay interface ip address
-	uci set network.RELAY.network="LAN $NEW_RELAY_INTERFACE"
+  # set new relay interface ip address
+  uci set network.RELAY.network="LAN $NEW_RELAY_INTERFACE"
 
-	# queue changes
-	SHOULD_COMMIT="true"
+  # queue changes
+  SHOULD_COMMIT="true"
 fi
 
 # commit changes if needed
 if [ "$SHOULD_COMMIT" = "true" ]; then
-	# commit changes to interface and/or ip address
-	uci commit
+  # commit changes to interface and/or ip address
+  uci commit
 
-	# queue relayd restart
-	SHOULD_RESTART="true"
+  # queue relayd restart
+  SHOULD_RESTART="true"
 fi
 
 # if relayd is using the wrong interface, queue a restart
 if ! ps | grep "/usr/sbin/relayd -I br-LAN -I $EXPECTED_INTERFACE" 2>&1 >/dev/null; then
-	echo "Wrong interface selected in relayd. Restarting process."
+  echo "Wrong interface selected in relayd. Restarting process."
 
-	# queue relayd restart
-	SHOULD_RESTART="true"
+  # queue relayd restart
+  SHOULD_RESTART="true"
 fi
 
 # restart relayd if needed
 if [ "$SHOULD_RESTART" = "true" ]; then
-	# restart relayd to apply new interface and/or ip address
-	/etc/init.d/relayd restart
+  # restart relayd to apply new interface and/or ip address
+  /etc/init.d/relayd restart
 fi
 EOL
 
@@ -498,11 +498,11 @@ START=30
 STOP=60
 
 start() {
-        /usr/sbin/usbmuxd -v
+  /usr/sbin/usbmuxd -v
 }
 
 stop() {
-        kill -9 "$(pgrep usbmuxd)"
+  kill -9 "$(pgrep usbmuxd)"
 }
 EOL
 
@@ -518,22 +518,23 @@ cat <<'EOL' | tee "$workdir"/files/www/wifi.html
 <body>
 
 <form action="scan.php" method="post">
-<h3>Scan for nearby SSIDs</h3>
+  <h3>Scan for nearby SSIDs</h3>
   Band: <select name="band">
     <option value="2.4">2.4GHz</option>
     <option value="5">5GHz</option>
   </select>
-  <input type="submit">
+  <input type="submit" value="Scan">
 </form>
 
 <form action="wifi.php" method="post">
+  <h3>Update WiFi credentials</h3>
   Band: <select name="band">
     <option value="2.4">2.4GHz</option>
     <option value="5">5GHz</option>
   </select><br />
   SSID: <input type="text" name="ssid"><br />
   PSK:&nbsp; <input type="text" name="psk"><br />
-  <input type="submit">
+  <input type="submit" value="Update">
 </form>
 
 </body>
@@ -653,7 +654,7 @@ echo "Building OpenWRT image..."
 cd "$workdir" && \
 make image \
 PROFILE='archer-c7-v2' \
-PACKAGES='luci-ssl php7 php7-cgi php7-mod-ctype ethtool iwinfo wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
+PACKAGES='luci-ssl php7 php7-cgi php7-mod-ctype ethtool iwinfo ncat rsync curl tcpdump snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
 FILES=files && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
