@@ -661,7 +661,7 @@ if ("$band" == "5") {
 }
 
 // fetch and parse list of available ssids
-$ssids = shell_exec('for ssid in $(iwinfo radio0 scan | grep ESSID | sed \'s/\"//g\' | awk \'{print $2}\' | awk \'{$1=$1;print}\' | uniq); do echo "<a href="/wifi.html?ssid=$ssid\&band='.$band.'">$ssid</a>";done');
+$ssids = shell_exec('for ssid in $(iwinfo '.$wifiradio.' scan | grep ESSID | sed \'s/\"//g\' | awk \'{print $2}\' | awk \'{$1=$1;print}\' | uniq); do echo "<a href="/wifi.html?ssid=$ssid\&band='.$band.'">$ssid</a>";done');
 echo "<b>Nearby ".$band."GHz SSIDs:</b>";
 echo "<pre>$ssids</pre>";
 
