@@ -537,14 +537,14 @@ fi
 # update status leds if needed
 CURRENT_LED_STATUS="$(cat /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger)"
 if ! [ "$CURRENT_LED_STATUS" = "default_on" ]; then
-  # turn off all uplink leds
+  # turn off all inactive uplink leds
   for led in usb1 usb2 wlan2g wlan5g; do
     if ! [ "$led" = "$NEW_RELAY_LED" ]; then
       echo "none" | tee /sys/class/leds/tp-link:green:"$led"/trigger >/dev/null
     fi
   done
 
-  # turn on the correct led
+  # turn on the led for the active uplink
   echo "default-on" | tee /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger >/dev/null
 fi
 
