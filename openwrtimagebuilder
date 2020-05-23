@@ -609,10 +609,10 @@ cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/00-netstate
 /etc/init.d/relayaddr
 
 [ ifup = "$ACTION" ] && {
-        uci_toggle_state network "$INTERFACE" up 1
-        [ -n "$DEVICE" ] && {
-                uci_toggle_state network "$INTERFACE" ifname "$DEVICE"
-        }
+  uci_toggle_state network "$INTERFACE" up 1
+  [ -n "$DEVICE" ] && {
+    uci_toggle_state network "$INTERFACE" ifname "$DEVICE"
+  }
 }
 EOL
 
