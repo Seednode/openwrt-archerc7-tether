@@ -510,6 +510,13 @@ else
   SHOULD_COMMIT="true"
 fi
 
+# swap usb leds because the naming is inverted
+if [ "$NEW_RELAY_LED" = "usb1" ]; then
+  NEW_RELAY_LED="usb2"
+elif [ "$NEW_RELAY_LED" = "usb2" ]; then
+  NEW_RELAY_LED="usb1"
+fi
+
 # update status leds if needed
 CURRENT_LED_STATUS="$(cat /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger)"
 if ! [ "$CURRENT_LED_STATUS" = "default_on" ]; then
