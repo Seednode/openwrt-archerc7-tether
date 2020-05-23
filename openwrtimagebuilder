@@ -10,7 +10,7 @@
 # power up router, then immediately press and hold the WPS/Reset button until the WPS light turns on
 # wait ~2 minutes for router to complete reset
 
-# interfaces
+## interfaces
 # eth0   - LAN (bridged)
 # eth1   - LAN (bridged)
 # br-LAN - LAN bridge
@@ -19,7 +19,7 @@
 # usb0   - Android USB tether
 # eth2   - iPhone USB tether
 
-# switch0 ports
+## switch0 ports
 # Port 0: LAN CPU(?)
 # Port 1: WAN
 # Port 2: LAN 1
@@ -27,6 +27,24 @@
 # Port 4: LAN 3
 # Port 5: LAN 4
 # Port 6: WAN CPU(?)
+
+## leds
+# ath10k-phy0
+# ath9k-phy1
+# tp-link:green:lan1
+# tp-link:green:lan2
+# tp-link:green:lan3
+# tp-link:green:lan4
+# tp-link:green:qss
+# tp-link:green:system
+# tp-link:green:usb1
+# tp-link:green:usb2
+# tp-link:green:wan
+# tp-link:green:wlan2g
+# tp-link:green:wlan5g
+
+## led triggers
+# [none] switch0 timer default-on netdev usbport phy0rx phy0tx phy0assoc phy0radio phy0tpt phy1rx phy1tx phy1assoc phy1
 
 # when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
 
@@ -377,6 +395,9 @@ else
   # store relay network device
   NEW_RELAY_INTERFACE="WAN_WIFI_2"
 
+  # store led to light up
+  NEW_RELAY_LED="wlan2g"
+
   # store expected interface argument for relayd
   EXPECTED_INTERFACE="$WIFI_2_INTERFACE"
 fi
@@ -394,6 +415,9 @@ else
 
   # store relay network device
   NEW_RELAY_INTERFACE="WAN_WIFI_5"
+
+  # store led to light up
+  NEW_RELAY_LED="wlan5g"
 
   # store expected interface argument for relayd
   EXPECTED_INTERFACE="$WIFI_5_INTERFACE"
@@ -413,6 +437,10 @@ else
   # store new relay network device
   NEW_RELAY_INTERFACE="WAN_ANDROID_USB"
 
+  # store led to light up
+  USB_PORT="$(dmesg | grep "register 'rndis_host'" | tail -n1 | awk '{print $4}' | cut -d"-" -f1)"
+  NEW_RELAY_LED="usb$USB_PORT"
+
   # store expected interface argument for relayd
   EXPECTED_INTERFACE="$USB_ANDROID_INTERFACE"
 fi
@@ -430,6 +458,10 @@ else
 
   # store new relay network device
   NEW_RELAY_INTERFACE="WAN_IPHONE_USB"
+
+  # store led to light up
+  USB_PORT="$(dmesg | grep "register 'rndis_host'" | tail -n1 | awk '{print $4}' | cut -d"-" -f1)"
+  NEW_RELAY_LED="usb$USB_PORT"
 
   # store expected interface argument for relayd
   EXPECTED_INTERFACE="$USB_IPHONE_INTERFACE"
@@ -459,6 +491,20 @@ else
 
   # queue changes
   SHOULD_COMMIT="true"
+fi
+
+# update status leds if needed
+CURRENT_LED_STATUS="$(cat /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger)"
+if ! [ "$CURRENT_LED_STATUS" = "default_on" ]; then
+  # turn off all uplink leds
+  for led in usb1 usb2 wlan2g wlan5g; do
+    if ! [ "$led" = "$NEW_RELAY_LED" ]; then
+      echo "none" > /sys/class/leds/tp-link:green:"$led"/trigger
+    fi
+  done
+
+  # turn on the correct led
+  echo "default-on" > /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger
 fi
 
 # commit changes if needed
