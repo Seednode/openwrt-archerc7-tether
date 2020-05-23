@@ -371,6 +371,23 @@ cat <<'EOL' | tee "$workdir"/files/etc/rc.button/wps
 # do nothing on wps button press
 EOL
 
+# create connectivity test script
+cat <<'EOL' | tee "$workdir"/files/etc/init.d/isonline
+#!/usr/bin/env ash
+
+# try connecting to google
+echo -e "GET http://google.com HTTP/1.0\n\n" | ncat -w5 google.com 80 > /dev/null 2>&1
+
+# echo status and toggle wan light
+if [ $? -eq 0 ]; then
+  echo "default-on" > /sys/class/leds/tp-link:green:wan/trigger
+  echo "Online"
+else
+  echo "none" > /sys/class/leds/tp-link:green:wan/trigger
+  echo "Offline"
+fi
+EOL
+
 # create relayd address update script
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
@@ -531,8 +548,9 @@ if [ "$SHOULD_RESTART" = "true" ]; then
 fi
 EOL
 
-# add root crontab to run the relayd address update every minute
+# add root crontab to run the relayd address update script and connectivity test every minute
 cat <<'EOL' | tee "$workdir"/files/etc/crontabs/root
+* * * * * /etc/init.d/isonline
 * * * * * /etc/init.d/relayaddr
 EOL
 
@@ -725,6 +743,7 @@ echo "Config files written."
 # fix permissions
 echo "Setting permissions for all modified directories..."
 chmod 0755 "$workdir"/files/etc/rc.button/wps
+chmod 0755 "$workdir"/files/etc/init.d/isonline
 chmod 0755 "$workdir"/files/etc/init.d/relayaddr
 chmod 0755 "$workdir"/files/etc/init.d/usbmux
 chmod 0755 "$workdir"/files/etc/uci-defaults/usbmux
