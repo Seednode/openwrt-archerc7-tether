@@ -376,6 +376,14 @@ EOL
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/isonline
 #!/usr/bin/env ash
 
+# check for lock file
+if { set -C; 2>/dev/null >/tmp/isonline.lock; }; then
+  trap "rm -f /tmp/isonline.lock" EXIT
+else
+  echo "Another instance is already running. Exiting."
+  exit 1
+fi
+
 # try connecting to google
 echo -e "GET http://google.com HTTP/1.0\n\n" | ncat -w5 google.com 80 >/dev/null 2>&1
 
