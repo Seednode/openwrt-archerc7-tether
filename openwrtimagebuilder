@@ -190,7 +190,7 @@ option leasefile '/tmp/hosts/odhcpd'
 option leasetrigger '/usr/sbin/odhcpd-update'
 EOL
 
-# create firewall rules for remote administration
+# set default firewall policy to allow all traffic; this is a relay, not a firewall
 cat <<EOL | tee "$workdir"/files/etc/config/firewall
 config defaults
 option input 'ACCEPT'
@@ -198,19 +198,16 @@ option forward 'ACCEPT'
 option output 'ACCEPT'
 option drop_invalid '1'
 option synflood_protect '1'
-
-config include
-option path /etc/firewall.user
 EOL
 
-# set ssh listen port to tcp/9022 on the wan and disable password login
+# set ssh listen port to tcp/9022
 cat <<'EOL' | tee "$workdir"/files/etc/config/dropbear
 config dropbear
 option PasswordAuth 'on'
 option Port '9022'
 EOL
 
-# set up a uhttpd instance listening on 443/tcp on the mgmt network
+# set up a uhttpd instance listening on 443/tcp
 cat <<EOL | tee "$workdir"/files/etc/config/uhttpd
 config uhttpd 'luci'
 list listen_https '0.0.0.0:443'
