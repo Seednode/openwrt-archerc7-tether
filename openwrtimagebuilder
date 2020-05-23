@@ -777,7 +777,10 @@ $ssids = shell_exec('for ssid in $(iwinfo '.$wifiradio.' scan | grep ESSID | sed
 echo "<b>Nearby ".$band."GHz SSIDs:</b>";
 echo "<pre>$ssids</pre>";
 
-?>
+?><br />
+
+<a href="/wifi.html">Return to Main Page</a>
+
 EOL
 
 # finished writing config files
