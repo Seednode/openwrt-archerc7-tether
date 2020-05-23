@@ -121,9 +121,10 @@ echo "Imagebuilder downloaded."
 # i.e. files/etc/dropbear/authorized_keys will be located at /etc/dropbear/authorized_keys in the final squashfs image
 echo "Creating required directories..."
 mkdir -p "$workdir"/files/etc/config
-mkdir -p "$workdir"/files/etc/rc.button
-mkdir -p "$workdir"/files/etc/init.d
 mkdir -p "$workdir"/files/etc/crontabs
+mkdir -p "$workdir"/files/etc/hotplug.d/iface
+mkdir -p "$workdir"/files/etc/init.d
+mkdir -p "$workdir"/files/etc/rc.button
 mkdir -p "$workdir"/files/etc/uci-defaults
 mkdir -p "$workdir"/files/www
 
@@ -376,14 +377,14 @@ cat <<'EOL' | tee "$workdir"/files/etc/init.d/isonline
 #!/usr/bin/env ash
 
 # try connecting to google
-echo -e "GET http://google.com HTTP/1.0\n\n" | ncat -w5 google.com 80 > /dev/null 2>&1
+echo -e "GET http://google.com HTTP/1.0\n\n" | ncat -w5 google.com 80 >/dev/null 2>&1
 
 # echo status and toggle wan light
 if [ $? -eq 0 ]; then
-  echo "default-on" > /sys/class/leds/tp-link:green:wan/trigger
+  echo "default-on" | tee /sys/class/leds/tp-link:green:wan/trigger >/dev/null
   echo "Online"
 else
-  echo "none" > /sys/class/leds/tp-link:green:wan/trigger
+  echo "none" | tee /sys/class/leds/tp-link:green:wan/trigger >/dev/null
   echo "Offline"
 fi
 EOL
@@ -391,6 +392,14 @@ EOL
 # create relayd address update script
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
+
+# check for lock file
+if { set -C; 2>/dev/null >/tmp/relayaddr.lock; }; then
+  trap "rm -f /tmp/relayaddr.lock" EXIT
+else
+  echo "Another instance is already running. Exiting."
+  exit 1
+fi
 
 # retrieve current relay ip address
 OLD_RELAY_IP="$(uci get network.RELAY.ipaddr)"
@@ -400,7 +409,7 @@ OLD_RELAY_INTERFACE="$(uci get network.RELAY.network | awk '{print $2}')"
 
 # update 2.4ghz wifi tether
 WIFI_2_INTERFACE="wlan1"
-WIFI_2_IP="$(ip -f inet addr show $WIFI_2_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+WIFI_2_IP="$(ip -f inet addr show $WIFI_2_INTERFACE 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_2_IP" = "" ]; then
   echo "No 2.4GHz WiFi tether detected."
 else
@@ -421,7 +430,7 @@ fi
 
 # update 5ghz wifi tether
 WIFI_5_INTERFACE="wlan0"
-WIFI_5_IP="$(ip -f inet addr show $WIFI_5_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+WIFI_5_IP="$(ip -f inet addr show $WIFI_5_INTERFACE 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$WIFI_5_IP" = "" ]; then
   echo "No 5GHz WiFi tether detected."
 else
@@ -442,7 +451,7 @@ fi
 
 # update android usb tether
 USB_ANDROID_INTERFACE="usb0"
-USB_ANDROID_IP="$(ip -f inet addr show $USB_ANDROID_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+USB_ANDROID_IP="$(ip -f inet addr show $USB_ANDROID_INTERFACE 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$USB_ANDROID_IP" = "" ]; then
   echo "No USB Android tether detected."
 else
@@ -464,7 +473,7 @@ fi
 
 # update iphone usb tether
 USB_IPHONE_INTERFACE="eth2"
-USB_IPHONE_IP="$(ip -f inet addr show $USB_IPHONE_INTERFACE | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+USB_IPHONE_IP="$(ip -f inet addr show $USB_IPHONE_INTERFACE 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
 if [ "$USB_IPHONE_IP" = "" ]; then
   echo "No USB iPhone tether detected."
 else
@@ -523,12 +532,12 @@ if ! [ "$CURRENT_LED_STATUS" = "default_on" ]; then
   # turn off all uplink leds
   for led in usb1 usb2 wlan2g wlan5g; do
     if ! [ "$led" = "$NEW_RELAY_LED" ]; then
-      echo "none" > /sys/class/leds/tp-link:green:"$led"/trigger
+      echo "none" | tee /sys/class/leds/tp-link:green:"$led"/trigger >/dev/null
     fi
   done
 
   # turn on the correct led
-  echo "default-on" > /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger
+  echo "default-on" | tee /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger >/dev/null
 fi
 
 # commit changes if needed
@@ -581,6 +590,22 @@ EOL
 cat <<'EOL' | tee "$workdir"/files/etc/uci-defaults/usbmux
 #!/bin/sh
 /etc/init.d/usbmux enable
+EOL
+
+# add hotplug event triggering relayd and isonline update
+cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/00-netstate
+# update internet status light
+/etc/init.d/isonline
+
+# update relay interfaces
+/etc/init.d/relayaddr
+
+[ ifup = "$ACTION" ] && {
+        uci_toggle_state network "$INTERFACE" up 1
+        [ -n "$DEVICE" ] && {
+                uci_toggle_state network "$INTERFACE" ifname "$DEVICE"
+        }
+}
 EOL
 
 # add html form for updating ssid and psk
