@@ -532,9 +532,15 @@ function getQueryVariable(variable)
 function prefillForm()
 {
   var band = getQueryVariable("band");
+  if (band == false) {
+    band = "2.4";
+  }
   document.forms[1].band.value = band;
 
   var ssid = getQueryVariable("ssid");
+  if (ssid == false) {
+    ssid = "";
+  }
   document.forms[1].ssid.value = ssid;
 }
 </script>
