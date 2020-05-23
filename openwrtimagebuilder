@@ -515,7 +515,33 @@ EOL
 # add html form for updating ssid and psk
 cat <<'EOL' | tee "$workdir"/files/www/wifi.html
 <html>
-<body>
+<head>
+
+<script language="javascript" type="text/javascript">
+function getQueryVariable(variable)
+{
+  var query = window.location.search.substring(1);
+  var vars = query.split("&");
+  for (var i=0;i<vars.length;i++) {
+    var pair = vars[i].split("=");
+    if(pair[0] == variable){return pair[1];}
+  }
+  return(false);
+}
+
+function prefillForm()
+{
+  var band = getQueryVariable("band");
+  document.forms[1].band.value = band;
+
+  var ssid = getQueryVariable("ssid");
+  document.forms[1].ssid.value = ssid;
+}
+</script>
+
+</head>
+
+<body onLoad="prefillForm()">
 
 <form action="scan.php" method="post">
   <h3>Scan for nearby SSIDs</h3>
@@ -528,11 +554,11 @@ cat <<'EOL' | tee "$workdir"/files/www/wifi.html
 
 <form action="wifi.php" method="post">
   <h3>Update WiFi credentials</h3>
-  Band: <select name="band">
+  Band: <select name="band" id="band">
     <option value="2.4">2.4GHz</option>
     <option value="5">5GHz</option>
   </select><br />
-  SSID: <input type="text" name="ssid"><br />
+  SSID: <input type="text" name="ssid" id="ssid"><br />
   PSK:&nbsp; <input type="text" name="psk"><br />
   <input type="submit" value="Update">
 </form>
@@ -629,7 +655,7 @@ if ("$band" == "5") {
 }
 
 // fetch and parse list of available ssids
-$ssids = shell_exec('iwinfo '.$wifiradio.' scan | grep ESSID | sed \'s/\"//g\' | awk \'{print $2}\' | awk \'{$1=$1;print}\' | uniq');
+$ssids = shell_exec('for ssid in $(iwinfo radio0 scan | grep ESSID | sed \'s/\"//g\' | awk \'{print $2}\' | awk \'{$1=$1;print}\' | uniq); do echo "<a href="/wifi.html?ssid=$ssid\&band='.$band.'">$ssid</a>";done');
 echo "<b>Nearby ".$band."GHz SSIDs:</b>";
 echo "<pre>$ssids</pre>";
 
