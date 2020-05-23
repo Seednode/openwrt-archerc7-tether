@@ -742,7 +742,10 @@ shell_exec('wifi up '.$wifiradio);
 // report success
 echo "Submitted changes successfully.";
 
-?>
+?><br /><br />
+
+<a href="/wifi.html">Return to Main Page</a>
+
 EOL
 
 # add php script for scanning nearby ssids
