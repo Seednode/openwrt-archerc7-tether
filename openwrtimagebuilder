@@ -518,6 +518,7 @@ cat <<'EOL' | tee "$workdir"/files/www/wifi.html
 <head>
 
 <script language="javascript" type="text/javascript">
+// retrieve variables from url query strings
 function getQueryVariable(variable)
 {
   var query = window.location.search.substring(1);
@@ -529,6 +530,7 @@ function getQueryVariable(variable)
   return(false);
 }
 
+// prefill wireless band and ssid if provided in url
 function prefillForm()
 {
   var band = getQueryVariable("band");
@@ -547,8 +549,10 @@ function prefillForm()
 
 </head>
 
+<!-- prefill forms on page load -->
 <body onLoad="prefillForm()">
 
+<!-- scan for available wireless networks -->
 <form action="scan.php" method="post">
   <h3>Scan for nearby SSIDs</h3>
   Band: <select name="band">
@@ -558,6 +562,7 @@ function prefillForm()
   <input type="submit" value="Scan">
 </form>
 
+<!-- update stored wifi creds -->
 <form action="wifi.php" method="post">
   <h3>Update WiFi credentials</h3>
   Band: <select name="band" id="band">
