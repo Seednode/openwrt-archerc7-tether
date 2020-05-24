@@ -412,6 +412,12 @@ target default {
 target "1.1.1.1" { description "Cloudflare Anycast DNS"; }
 EOL
 
+# create an empty script for the rfkill button
+# we only want to disable it via script or webui
+cat <<'EOL' | tee "$workdir"/files/etc/rc.button/rfkill
+# do nothing on rfkill switch toggle
+EOL
+
 # create an empty script for the wps trigger
 # we only want wps to be activated via script
 cat <<'EOL' | tee "$workdir"/files/etc/rc.button/wps
@@ -763,7 +769,6 @@ echo "Submitted changes successfully.";
 ?><br /><br />
 
 <a href="/wifi.html">Return to Main Page</a>
-
 EOL
 
 # add php script for scanning nearby ssids
@@ -790,7 +795,6 @@ echo "<pre>$ssids</pre>";
 ?><br />
 
 <a href="/wifi.html">Return to Main Page</a>
-
 EOL
 
 # finished writing config files
@@ -798,6 +802,7 @@ echo "Config files written."
 
 # fix permissions
 echo "Setting permissions for all modified directories..."
+chmod 0755 "$workdir"/files/etc/rc.button/rfkill
 chmod 0755 "$workdir"/files/etc/rc.button/wps
 chmod 0755 "$workdir"/files/etc/init.d/relayaddr
 chmod 0755 "$workdir"/files/etc/init.d/usbmux
