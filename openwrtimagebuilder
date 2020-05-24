@@ -94,13 +94,13 @@ fi
 mkdir -p "$imagebuilderdir"
 
 # display log location
-echo -e "\nLogging all build output to $logfile\n"
+echo -e "\nLogging all build output to $logfile"
 
 # display git commit hash
-echo -e "\nBuilding from commit $(git rev-parse HEAD)."
+echo -e "\nBuilding from commit $(git rev-parse HEAD)." >> "$logfile" 2>&1
 
 # prepend timestamp to logfile
-echo -e "\n\nBuild began at $(date +%Y/%m/%d-%H:%M).\n\n" >> "$logfile" 2>&1
+echo -e "\nBuild began at $(date +%Y/%m/%d-%H:%M).\n" >> "$logfile" 2>&1
 
 # wrap the script into a function for logging purposes
 {
@@ -109,7 +109,7 @@ echo -e "\n\nBuild began at $(date +%Y/%m/%d-%H:%M).\n\n" >> "$logfile" 2>&1
 echo "Imagebuilder version set to $version"
 
 # display imagebuilder directory
-echo "imagebuilder directory is $imagebuilderdir"
+echo "Imagebuilder directory is $imagebuilderdir"
 
 # set and display working directory
 workdir="$imagebuilderdir/$version"
