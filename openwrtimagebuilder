@@ -3,7 +3,7 @@
 ## a basic script for building openwrt images for
 ## the TPLink Archer C7 v2 on ubuntu 20.04
 
-# recovery instructions:
+## recovery instructions:
 # set up tftpd server listening on 192.168.0.66 serving ArcherC7v2_tp_recovery.bin (stripped, non-boot)
 # available at https://cdn.seedno.de/misc/ArcherC7v2_tp_recovery.bin
 # plug ethernet cable into LAN1 on Archer C7, unplugging any cable in WAN port
@@ -28,25 +28,26 @@
 # Port 5: LAN 4
 # Port 6: WAN CPU(?)
 
-## leds
-# ath10k-phy0
-# ath9k-phy1
+## front leds, from left to right
+# tp-link:green:power (not modifiable)
+# tp-link:green:system
+# tp-link:green:wlan2g
+# tp-link:green:wlan5g
 # tp-link:green:lan1
 # tp-link:green:lan2
 # tp-link:green:lan3
 # tp-link:green:lan4
-# tp-link:green:qss
-# tp-link:green:system
-# tp-link:green:usb1
-# tp-link:green:usb2
 # tp-link:green:wan
-# tp-link:green:wlan2g
-# tp-link:green:wlan5g
+# tp-link:green:qss
+
+## rear lcds, from top to bottom
+# tp-link:green:usb2
+# tp-link:green:usb1
 
 ## led triggers
-# [none] switch0 timer default-on netdev usbport phy0rx phy0tx phy0assoc phy0radio phy0tpt phy1rx phy1tx phy1assoc phy1
+# none switch0 timer default-on netdev usbport phy0rx phy0tx phy0assoc phy0radio phy0tpt phy1rx phy1tx phy1assoc phy1radio phy1tpt
 
-# when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
+## when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
 
 ## install all dependencies (uncomment and run script as root/sudo if needed)
 # create array of dependencies
@@ -249,21 +250,18 @@ option enabled '1'
 list server 'time.nist.gov'
 list server 'time.windows.com'
 
-config led 'led_wlan2g'
-option name 'WLAN2G'
-option sysfs 'tp-link:blue:wlan2g'
-option trigger 'phy1tpt'
-
-config led 'led_wlan5g'
-option name 'WLAN5G'
-option sysfs 'tp-link:blue:wlan5g'
-option trigger 'phy0tpt'
-
 config led
 option default '0'
-option name 'System'
-option sysfs 'tp-link:blue:system'
+option trigger 'switch0'
+option port_mask '2'
+option name 'wan'
+option sysfs 'tp-link:green:wan'
+
+config led
 option trigger 'none'
+option sysfs 'tp-link:green:system'
+option name 'system'
+option default '0'
 EOL
 
 # configure interfaces
@@ -597,20 +595,16 @@ cat <<'EOL' | tee "$workdir"/files/etc/uci-defaults/usbmux
 /etc/init.d/usbmux enable
 EOL
 
-# add hotplug event triggering relayd and isonline update
-cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/00-netstate
-# update internet status light
-/etc/init.d/isonline
-
+# add hotplug event triggering relayd update
+cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/01-relayaddr
 # update relay interfaces
 /etc/init.d/relayaddr
+EOL
 
-[ ifup = "$ACTION" ] && {
-  uci_toggle_state network "$INTERFACE" up 1
-  [ -n "$DEVICE" ] && {
-    uci_toggle_state network "$INTERFACE" ifname "$DEVICE"
-  }
-}
+# add interface hotplug event triggering isonline update
+cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/02-isonline
+# update internet status light
+/etc/init.d/isonline
 EOL
 
 # add html form for updating ssid and psk
