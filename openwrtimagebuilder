@@ -96,6 +96,9 @@ mkdir -p "$imagebuilderdir"
 # display log location
 echo -e "\nLogging all build output to $logfile\n"
 
+# display git commit hash
+echo -e "\nBuilding from commit $(git rev-parse HEAD)."
+
 # prepend timestamp to logfile
 echo -e "\n\nBuild began at $(date +%Y/%m/%d-%H:%M).\n\n" >> "$logfile" 2>&1
 
