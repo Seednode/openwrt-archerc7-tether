@@ -381,35 +381,28 @@ status {
   # file where the status information whould be written to
   file "/tmp/apinger.status"
 
-  # Interval between file updates
+  # interval between file updates
   interval 1m
 }
 
-# alarm configuration
-alarm default {
-  # turn off uplink light when connectivity is lost
+# wan connectivity test
+alarm down "internet" {
+  # trigger after 3 seconds of outage
+  time 3s
+
+  # turn off system light when connectivity is lost
   command on "echo 'none' | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null"
 
-  # turn on uplink light when connectivity is restored
+  # turn on system light when connectivity is restored
   command off "echo 'default-on' | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null"
 }
 
-# only monitor for complete loss
-alarm down "down" {
-  time 3s
-}
-
-# target configuration
-target default {
-  # how often to send the probe
-  interval 1s
-
-  # only send alarms due to complete outages
-  alarms "down"
-}
-
 # targets to probe
-target "1.1.1.1" { description "Cloudflare Anycast DNS"; }
+target "1.1.1.1" {
+  description "Cloudflare Anycast DNS"
+  interval 1s
+  alarms "internet"
+}
 EOL
 
 # create an empty script for the rfkill button
