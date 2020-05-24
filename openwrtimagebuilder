@@ -251,15 +251,15 @@ list server 'time.nist.gov'
 list server 'time.windows.com'
 
 config led
-option default '0'
-option trigger 'switch0'
-option port_mask '2'
-option name 'wan'
 option sysfs 'tp-link:green:wan'
+option trigger 'switch0'
+option name 'wan'
+option default '0'
+option port_mask '2'
 
 config led
-option trigger 'none'
 option sysfs 'tp-link:green:system'
+option trigger 'none'
 option name 'system'
 option default '0'
 EOL
