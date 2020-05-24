@@ -31,18 +31,13 @@
 ## front leds, from left to right
 # tp-link:green:power (indicates system is powered on)
 # tp-link:green:system (flashes when system is booting)
-# tp-link:green:wlan2g (indicates 2.4ghz uplink is in use)
-# tp-link:green:wlan5g (indicates 5ghz uplink is in use)
-# tp-link:green:lan1 |
-# tp-link:green:lan2 |
-# tp-link:green:lan3 |---- (indicates link state for lan ports 1-5)
-# tp-link:green:lan4 |
-# tp-link:green:wan  |
+# tp-link:green:wlan2g (indicates whether 2.4ghz uplink is in use)
+# tp-link:green:wlan5g (indicates whether 5ghz uplink is in use)
 # tp-link:green:qss (indicates internet connectivity status)
 
 ## rear lcds, from top to bottom
-# tp-link:green:usb1 (indicates usb uplink 1 is in use)
-# tp-link:green:usb2 (indicates usb uplink 2 is in use)
+# tp-link:green:usb1 (indicates whether usb uplink 1 is in use)
+# tp-link:green:usb2 (indicates whether usb uplink 2 is in use)
 
 ## led triggers
 # none switch0 timer default-on netdev usbport phy0rx phy0tx phy0assoc phy0radio phy0tpt phy1rx phy1tx phy1assoc phy1radio phy1tpt
@@ -82,6 +77,7 @@ imagebuilderdir="$basedir/imagebuilder"
 # set OpenWRT imagebuilder version to use
 release="19.07.3"
 target="ath79"
+profile="tplink_archer-c7-v2"
 version="openwrt-imagebuilder-$release-$target-generic.Linux-x86_64"
 tarball="https://downloads.openwrt.org/releases/$release/targets/$target/generic/$version.tar.xz"
 
@@ -255,13 +251,6 @@ list server 'time.nist.gov'
 list server 'time.windows.com'
 
 config led
-option sysfs 'tp-link:green:wan'
-option trigger 'switch0'
-option name 'wan'
-option default '0'
-option port_mask '2'
-
-config led
 option sysfs 'tp-link:green:system'
 option trigger 'none'
 option name 'system'
@@ -332,19 +321,19 @@ cat <<'EOL' | tee "$workdir"/files/etc/config/wireless
 config wifi-device 'radio0'
 option type 'mac80211'
 option hwmode '11a'
-option path 'pci0000:01/0000:01:00.0'
 option htmode 'VHT80'
 option txpower '23'
 option country 'US'
+option path 'pci0000:00/0000:00:00.0'
 
 config wifi-device 'radio1'
 option type 'mac80211'
 option channel '11'
 option hwmode '11g'
-option path 'platform/qca955x_wmac'
 option htmode 'HT20'
 option txpower '23'
 option country 'US'
+option path 'platform/ahb/18100000_wmac'
 
 config wifi-iface 'wifinet0'
 option ssid 'iPhone'
@@ -379,7 +368,7 @@ timestamp_format "%Y%m%d%H%M%S"
 
 # status output
 status {
-  # file where the status information whould be written to
+  # file where the status information should be written to
   file "/tmp/apinger.status"
 
   # interval between file updates
@@ -802,11 +791,11 @@ echo "Permissions set."
 echo "Building OpenWRT image..."
 cd "$workdir" && \
 make image \
-PROFILE='tplink_archer-c7-v2' \
-PACKAGES='luci-ssl php7 php7-cgi php7-mod-ctype picocom vnstat apinger luci-app-vnstat ethtool iwinfo rsync curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
+PROFILE="$profile" \
+PACKAGES="luci-ssl php7 php7-cgi php7-mod-ctype picocom vnstat apinger luci-app-vnstat ethtool iwinfo rsync curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe" \
 FILES=files && \
-cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-tplink_archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
-cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-tplink_archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
+cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-"$profile"-squashfs-factory-us.bin "$basedir"/factory.bin && \
+cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-"$profile"-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
 
 # end function
 } 2>&1 | tee -a "$logfile" >/dev/null
