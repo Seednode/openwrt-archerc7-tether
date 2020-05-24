@@ -29,20 +29,20 @@
 # Port 6: WAN CPU(?)
 
 ## front leds, from left to right
-# tp-link:green:power (not modifiable)
-# tp-link:green:system
-# tp-link:green:wlan2g
-# tp-link:green:wlan5g
-# tp-link:green:lan1
-# tp-link:green:lan2
-# tp-link:green:lan3
-# tp-link:green:lan4
-# tp-link:green:wan
-# tp-link:green:qss
+# tp-link:green:power (indicates system is powered on)
+# tp-link:green:system (flashes when system is booting)
+# tp-link:green:wlan2g (indicates 2.4ghz uplink is in use)
+# tp-link:green:wlan5g (indicates 5ghz uplink is in use)
+# tp-link:green:lan1 |
+# tp-link:green:lan2 |
+# tp-link:green:lan3 |---- (indicates link state for lan ports 1-5)
+# tp-link:green:lan4 |
+# tp-link:green:wan  |
+# tp-link:green:qss (indicates internet connectivity status)
 
 ## rear lcds, from top to bottom
-# tp-link:green:usb2
-# tp-link:green:usb1
+# tp-link:green:usb2 (indicates usb uplink 1 is in use)
+# tp-link:green:usb1 (indicates usb uplink 2 is in use)
 
 ## led triggers
 # none switch0 timer default-on netdev usbport phy0rx phy0tx phy0assoc phy0radio phy0tpt phy1rx phy1tx phy1assoc phy1radio phy1tpt
@@ -53,7 +53,7 @@
 # create array of dependencies
 # $ declare -a dependencies=("subversion" "g++" "zlib1g-dev" "build-essential" "git" "python" "rsync" "man-db" "gawk" "libncurses5-dev" "gettext" "unzip" "file" "libssl-dev" "wget" "zip" "time")
 
-# check if dependencies are installed; if not, error out
+## check if dependencies are installed; if not, error out
 # $ for dependency in "${dependencies[@]}"; do
 # $  sudo dpkg-query -W "$dependency" >/dev/null 2>&1 || { echo >&2 "$dependency is not installed. Please install it manually and re-run the script."; exit 1; }
 # $ done
@@ -192,7 +192,7 @@ option leasetrigger '/usr/sbin/odhcpd-update'
 EOL
 
 # set default firewall policy to allow all traffic; this is a relay, not a firewall
-cat <<EOL | tee "$workdir"/files/etc/config/firewall
+cat <<'EOL' | tee "$workdir"/files/etc/config/firewall
 config defaults
 option input 'ACCEPT'
 option forward 'ACCEPT'
@@ -209,7 +209,7 @@ option Port '9022'
 EOL
 
 # set up a uhttpd instance listening on 443/tcp
-cat <<EOL | tee "$workdir"/files/etc/config/uhttpd
+cat <<'EOL' | tee "$workdir"/files/etc/config/uhttpd
 config uhttpd 'luci'
 list listen_https '0.0.0.0:443'
 option home '/www'
@@ -236,7 +236,7 @@ option commonname 'OpenWRT'
 EOL
 
 # set hostname, timezone, and other system info
-cat <<EOL | tee "$workdir"/files/etc/config/system
+cat <<'EOL' | tee "$workdir"/files/etc/config/system
 config system
 option cronloglevel '8'
 option zonename 'America/Chicago'
@@ -265,7 +265,7 @@ option default '0'
 EOL
 
 # configure interfaces
-cat <<EOL | tee "$workdir"/files/etc/config/network
+cat <<'EOL' | tee "$workdir"/files/etc/config/network
 config interface 'loopback'
 option ifname 'lo'
 option proto 'static'
@@ -324,7 +324,7 @@ option ports '1 6'
 EOL
 
 # set default ssid/password
-cat <<EOL | tee "$workdir"/files/etc/config/wireless
+cat <<'EOL' | tee "$workdir"/files/etc/config/wireless
 config wifi-device 'radio0'
 option type 'mac80211'
 option hwmode '11a'
@@ -361,35 +361,58 @@ option network 'WAN_WIFI_2'
 option ifname 'wlan1'
 EOL
 
+# configure apinger connectivity monitoring
+cat <<'EOL' | tee "$workdir"/files/etc/apinger.conf
+# privileged user required to write to sysfs
+user "root"
+group "root"
+
+# location of the pid file
+pid_file "/tmp/apinger.pid"
+
+# timestamp format
+timestamp_format "%Y%m%d%H%M%S"
+
+# status output
+status {
+  # file where the status information whould be written to
+  file "/tmp/apinger.status"
+
+  # Interval between file updates
+  interval 1m
+}
+
+# alarm configuration
+alarm default {
+  # turn off uplink light when connectivity is lost
+  command on "echo 'none' | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null"
+
+  # turn on uplink light when connectivity is restored
+  command off "echo 'default-on' | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null"
+}
+
+# only monitor for complete loss
+alarm down "down" {
+  time 3s
+}
+
+# target configuration
+target default {
+  # how often to send the probe
+  interval 1s
+
+  # only send alarms due to complete outages
+  alarms "down"
+}
+
+# targets to probe
+target "1.1.1.1" { description "Cloudflare Anycast DNS"; }
+EOL
+
 # create an empty script for the wps trigger
 # we only want wps to be activated via script
 cat <<'EOL' | tee "$workdir"/files/etc/rc.button/wps
 # do nothing on wps button press
-EOL
-
-# create connectivity test script
-cat <<'EOL' | tee "$workdir"/files/etc/init.d/isonline
-#!/usr/bin/env ash
-
-# check for lock file
-if { set -C; 2>/dev/null >/tmp/isonline.lock; }; then
-  trap "rm -f /tmp/isonline.lock" EXIT
-else
-  echo "Another instance is already running. Exiting."
-  exit 1
-fi
-
-# try connecting to google
-echo -e "GET http://google.com HTTP/1.0\n\n" | ncat -w5 google.com 80 >/dev/null 2>&1
-
-# echo status and toggle wps light
-if [ $? -eq 0 ]; then
-  echo "default-on" | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null
-  echo "Online"
-else
-  echo "none" | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null
-  echo "Offline"
-fi
 EOL
 
 # create relayd address update script
@@ -569,7 +592,6 @@ EOL
 
 # add root crontab to run the relayd address update script and connectivity test every minute
 cat <<'EOL' | tee "$workdir"/files/etc/crontabs/root
-* * * * * /etc/init.d/isonline
 * * * * * /etc/init.d/relayaddr
 EOL
 
@@ -599,12 +621,6 @@ EOL
 cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/01-relayaddr
 # update relay interfaces
 /etc/init.d/relayaddr
-EOL
-
-# add interface hotplug event triggering isonline update
-cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/02-isonline
-# update internet status light
-/etc/init.d/isonline
 EOL
 
 # add html form for updating ssid and psk
@@ -780,7 +796,6 @@ echo "Config files written."
 # fix permissions
 echo "Setting permissions for all modified directories..."
 chmod 0755 "$workdir"/files/etc/rc.button/wps
-chmod 0755 "$workdir"/files/etc/init.d/isonline
 chmod 0755 "$workdir"/files/etc/init.d/relayaddr
 chmod 0755 "$workdir"/files/etc/init.d/usbmux
 chmod 0755 "$workdir"/files/etc/uci-defaults/usbmux
@@ -793,7 +808,7 @@ echo "Building OpenWRT image..."
 cd "$workdir" && \
 make image \
 PROFILE='archer-c7-v2' \
-PACKAGES='luci-ssl php7 php7-cgi php7-mod-ctype picocom vnstat luci-app-vnstat ethtool iwinfo rsync curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
+PACKAGES='luci-ssl php7 php7-cgi php7-mod-ctype picocom vnstat apinger luci-app-vnstat ethtool iwinfo rsync curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
 FILES=files && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
 cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
