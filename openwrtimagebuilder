@@ -239,7 +239,7 @@ option commonname 'OpenWRT'
 EOL
 
 # set hostname, timezone, and other system info
-cat <<'EOL' | tee "$workdir"/files/etc/config/system
+cat <<EOL | tee "$workdir"/files/etc/config/system
 config system
 option cronloglevel '8'
 option zonename 'America/Chicago'
