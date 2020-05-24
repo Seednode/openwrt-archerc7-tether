@@ -467,7 +467,7 @@ else
   NEW_RELAY_INTERFACE="WAN_ANDROID_USB"
 
   # store led to light up
-  USB_PORT="$(dmesg | grep rndis_host | tail -n1 | sed -n -e 's/usb0.*$//p' | awk '{print $3}' | cut -d"-" -f1)"
+  USB_PORT="$(dmesg | grep rndis_host | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
   NEW_RELAY_LED="usb$USB_PORT"
 
   # store expected interface argument for relayd
@@ -489,7 +489,7 @@ else
   NEW_RELAY_INTERFACE="WAN_IPHONE_USB"
 
   # store led to light up
-  USB_PORT="$(dmesg | grep rndis_host | tail -n1 | sed -n -e 's/usb0.*$//p' | awk '{print $3}' | cut -d"-" -f1)"
+  USB_PORT="$(dmesg | grep rndis_host | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
   NEW_RELAY_LED="usb$USB_PORT"
 
   # store expected interface argument for relayd
