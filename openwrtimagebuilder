@@ -382,12 +382,12 @@ fi
 # try connecting to google
 echo -e "GET http://google.com HTTP/1.0\n\n" | ncat -w5 google.com 80 >/dev/null 2>&1
 
-# echo status and toggle wan light
+# echo status and toggle wps light
 if [ $? -eq 0 ]; then
-  echo "default-on" | tee /sys/class/leds/tp-link:green:wan/trigger >/dev/null
+  echo "default-on" | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null
   echo "Online"
 else
-  echo "none" | tee /sys/class/leds/tp-link:green:wan/trigger >/dev/null
+  echo "none" | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null
   echo "Offline"
 fi
 EOL
@@ -467,7 +467,7 @@ else
   NEW_RELAY_INTERFACE="WAN_ANDROID_USB"
 
   # store led to light up
-  USB_PORT="$(dmesg | grep rndis_host | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
+  USB_PORT="$(dmesg | grep "usb0: register 'rndis_host'" | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
   NEW_RELAY_LED="usb$USB_PORT"
 
   # store expected interface argument for relayd
@@ -489,7 +489,7 @@ else
   NEW_RELAY_INTERFACE="WAN_IPHONE_USB"
 
   # store led to light up
-  USB_PORT="$(dmesg | grep rndis_host | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
+  USB_PORT="$(dmesg | grep "usb0: register 'rndis_host'" | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
   NEW_RELAY_LED="usb$USB_PORT"
 
   # store expected interface argument for relayd
