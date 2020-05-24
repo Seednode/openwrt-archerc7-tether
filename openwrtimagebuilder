@@ -199,6 +199,8 @@ option forward 'ACCEPT'
 option output 'ACCEPT'
 option drop_invalid '1'
 option synflood_protect '1'
+option flow_offloading '1'
+option flow_offloading_hw '1'
 EOL
 
 # set ssh listen port to tcp/9022
@@ -792,7 +794,7 @@ echo "Building OpenWRT image..."
 cd "$workdir" && \
 make image \
 PROFILE="$profile" \
-PACKAGES="luci-ssl php7 php7-cgi php7-mod-ctype vnstat apinger luci-app-vnstat iwinfo curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe" \
+PACKAGES="luci-ssl php7 php7-cgi php7-mod-ctype vnstat apinger luci-app-vnstat iwinfo curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
 FILES=files && \
 cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-"$profile"-squashfs-factory-us.bin "$basedir"/factory.bin && \
 cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-"$profile"-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
