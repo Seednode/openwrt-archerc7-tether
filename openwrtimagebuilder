@@ -41,8 +41,8 @@
 # tp-link:green:qss (indicates internet connectivity status)
 
 ## rear lcds, from top to bottom
-# tp-link:green:usb2 (indicates usb uplink 1 is in use)
-# tp-link:green:usb1 (indicates usb uplink 2 is in use)
+# tp-link:green:usb1 (indicates usb uplink 1 is in use)
+# tp-link:green:usb2 (indicates usb uplink 2 is in use)
 
 ## led triggers
 # none switch0 timer default-on netdev usbport phy0rx phy0tx phy0assoc phy0radio phy0tpt phy1rx phy1tx phy1assoc phy1radio phy1tpt
@@ -81,8 +81,9 @@ imagebuilderdir="$basedir/imagebuilder"
 
 # set OpenWRT imagebuilder version to use
 release="19.07.3"
-version="openwrt-imagebuilder-$release-ar71xx-generic.Linux-x86_64"
-tarball="https://downloads.openwrt.org/releases/$release/targets/ar71xx/generic/$version.tar.xz"
+target="ath79"
+version="openwrt-imagebuilder-$release-$target-generic.Linux-x86_64"
+tarball="https://downloads.openwrt.org/releases/$release/targets/$target/generic/$version.tar.xz"
 
 # delete any old builds if they exist
 if [ -d "$imagebuilderdir/$version" ]; then
@@ -547,13 +548,6 @@ else
   SHOULD_COMMIT="true"
 fi
 
-# swap usb leds because the naming is inverted
-if [ "$NEW_RELAY_LED" = "usb1" ]; then
-  NEW_RELAY_LED="usb2"
-elif [ "$NEW_RELAY_LED" = "usb2" ]; then
-  NEW_RELAY_LED="usb1"
-fi
-
 # update status leds if needed
 CURRENT_LED_STATUS="$(cat /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger)"
 if ! [ "$CURRENT_LED_STATUS" = "default_on" ]; then
@@ -802,17 +796,17 @@ chmod 0755 "$workdir"/files/etc/init.d/usbmux
 chmod 0755 "$workdir"/files/etc/uci-defaults/usbmux
 echo "Permissions set."
 
-# build the image; the output will be located in $basedir/bin/targets/ar71xx/generic/
+# build the image; the output will be located in $basedir/bin/targets/$target/generic/
 # - image for web ui upgrade: "$HOME"/"$hostname"/factory.bin
 # - image for cli upgrade: "$HOME"/"$hostname"/sysupgrade.bin
 echo "Building OpenWRT image..."
 cd "$workdir" && \
 make image \
-PROFILE='archer-c7-v2' \
+PROFILE='tplink_archer-c7-v2' \
 PACKAGES='luci-ssl php7 php7-cgi php7-mod-ctype picocom vnstat apinger luci-app-vnstat ethtool iwinfo rsync curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe' \
 FILES=files && \
-cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
-cp "$workdir"/bin/targets/ar71xx/generic/*-generic-archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
+cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-tplink_archer-c7-v2-squashfs-factory-us.bin "$basedir"/factory.bin && \
+cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-tplink_archer-c7-v2-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
 
 # end function
 } 2>&1 | tee -a "$logfile" >/dev/null
