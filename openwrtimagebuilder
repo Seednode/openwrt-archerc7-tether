@@ -333,7 +333,7 @@ option hwmode '11g'
 option htmode 'HT20'
 option txpower '23'
 option country 'US'
-option path 'platform/ahb/18100000_wmac'
+option path 'platform/ahb/18100000.wmac'
 
 config wifi-iface 'wifinet0'
 option ssid 'iPhone'
