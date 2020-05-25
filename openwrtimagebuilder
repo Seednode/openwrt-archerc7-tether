@@ -3,6 +3,9 @@
 ## a basic script for building openwrt images for
 ## the TPLink Archer C7 v2 on ubuntu 20.04
 
+## install all dependencies before running
+# $ sudo apt install -y subversion g++ zlib1g-dev build-essential git python rsync man-db gawk libncurses5-dev gettext unzip file libssl-dev wget zip time
+
 ## recovery instructions:
 # set up tftpd server listening on 192.168.0.66 serving ArcherC7v2_tp_recovery.bin (stripped, non-boot)
 # available at https://cdn.seedno.de/misc/ArcherC7v2_tp_recovery.bin
@@ -30,7 +33,7 @@
 
 ## front leds, from left to right
 # tp-link:green:power (indicates system is powered on)
-# tp-link:green:system (flashes when system is booting)
+# tp-link:green:system (flashes when system is booting or upgrading)
 # tp-link:green:wlan2g (indicates whether 2.4ghz uplink is in use)
 # tp-link:green:wlan5g (indicates whether 5ghz uplink is in use)
 # tp-link:green:qss (indicates internet connectivity status)
@@ -39,26 +42,12 @@
 # tp-link:green:usb1 (indicates whether usb uplink 1 is in use)
 # tp-link:green:usb2 (indicates whether usb uplink 2 is in use)
 
-## led triggers
-# none switch0 timer default-on netdev usbport phy0rx phy0tx phy0assoc phy0radio phy0tpt phy1rx phy1tx phy1assoc phy1radio phy1tpt
-
-## when first upgrading to openwrt from old tplink firmware, you may need to rename the file factory.bin
-
-## install all dependencies (uncomment and run script as root/sudo if needed)
-# create array of dependencies
-# $ declare -a dependencies=("subversion" "g++" "zlib1g-dev" "build-essential" "git" "python" "rsync" "man-db" "gawk" "libncurses5-dev" "gettext" "unzip" "file" "libssl-dev" "wget" "zip" "time")
-
-## check if dependencies are installed; if not, error out
-# $ for dependency in "${dependencies[@]}"; do
-# $  sudo dpkg-query -W "$dependency" >/dev/null 2>&1 || { echo >&2 "$dependency is not installed. Please install it manually and re-run the script."; exit 1; }
-# $ done
-
 # fail in a sane manner
 set -eo pipefail
 
 # make sure the correct number of arguments are passed; if not, output syntax and exit
 if [ "$#" -ne 0 ]; then
-  echo -e "\nUsage: openwrt_image_builder.sh\n"
+  echo -e "\nUsage: openwrtimagebuilder\n"
   exit 1
 fi
 
@@ -120,7 +109,7 @@ echo "Imagebuilder downloaded."
 
 # create directory for file overrides; this will serve as the effective / for any overwriting files
 # i.e. files/etc/dropbear/authorized_keys will be located at /etc/dropbear/authorized_keys in the final squashfs image
-echo "Creating required directories..."
+echo -e "\nCreating required directories..."
 mkdir -p "$workdir"/files/etc/config
 mkdir -p "$workdir"/files/etc/crontabs
 mkdir -p "$workdir"/files/etc/hotplug.d/iface
@@ -130,12 +119,13 @@ mkdir -p "$workdir"/files/etc/uci-defaults
 mkdir -p "$workdir"/files/www
 
 # finished creating directories
-echo "Finished creating directories."
+echo -e "Finished creating directories.\n"
 
 # begin generating config files
-echo "Generating system config files..."
+echo -e "\nGenerating system config files."
 
 # set login credentials
+echo -e "\nBegin login credentials."
 cat <<'EOL' | tee "$workdir"/files/etc/shadow
 root:$1$Bi5SZzpW$o3ymak7u35zX.fuuGCjt2.:18396:0:99999:7:::
 daemon:*:0:0:99999:7:::
@@ -144,8 +134,10 @@ network:*:0:0:99999:7:::
 nobody:*:0:0:99999:7:::
 dnsmasq:x:0:0:99999:7:::
 EOL
+echo -e "End login credentials.\n"
 
 # create dnsmasq configs and disable win2k filtering (which breaks jabber/xmpp)
+echo -e "\nBegin dnsmasq config."
 cat <<'EOL' | tee "$workdir"/files/etc/config/dhcp
 config dnsmasq
 option domainneeded '1'
@@ -190,8 +182,10 @@ option maindhcp '0'
 option leasefile '/tmp/hosts/odhcpd'
 option leasetrigger '/usr/sbin/odhcpd-update'
 EOL
+echo -e "End dnsmasq config.\n"
 
 # set default firewall policy to allow all traffic; this is a relay, not a firewall
+echo -e "\nBegin firewall config."
 cat <<'EOL' | tee "$workdir"/files/etc/config/firewall
 config defaults
 option input 'ACCEPT'
@@ -202,15 +196,19 @@ option synflood_protect '1'
 option flow_offloading '1'
 option flow_offloading_hw '1'
 EOL
+echo -e "End firewall config.\n"
 
 # set ssh listen port to tcp/9022
+echo -e "\nBegin dropbear config."
 cat <<'EOL' | tee "$workdir"/files/etc/config/dropbear
 config dropbear
 option PasswordAuth 'on'
 option Port '9022'
 EOL
+echo -e "End dropbear config.\n"
 
 # set up a uhttpd instance listening on 443/tcp
+echo -e "\nBegin uhttpd config."
 cat <<'EOL' | tee "$workdir"/files/etc/config/uhttpd
 config uhttpd 'luci'
 list listen_https '0.0.0.0:443'
@@ -236,8 +234,10 @@ option state 'Minnesota'
 option location 'Minneapolis'
 option commonname 'OpenWRT'
 EOL
+echo -e "End uhttp config.\n"
 
 # set hostname, timezone, and other system info
+echo -e "\nBegin system config."
 cat <<EOL | tee "$workdir"/files/etc/config/system
 config system
 option cronloglevel '8'
@@ -288,8 +288,10 @@ option sysfs 'tp-link:green:qss'
 option trigger 'none'
 option default '0'
 EOL
+echo -e "End system config.\n"
 
 # configure interfaces
+echo -e "\nBegin interface config."
 cat <<'EOL' | tee "$workdir"/files/etc/config/network
 config interface 'loopback'
 option ifname 'lo'
@@ -347,8 +349,10 @@ option device 'switch0'
 option vlan '2'
 option ports '1 6'
 EOL
+echo -e "End interface config.\n"
 
 # set default ssid/password
+echo -e "\nBegin wireless config."
 cat <<'EOL' | tee "$workdir"/files/etc/config/wireless
 config wifi-device 'radio0'
 option type 'mac80211'
@@ -385,8 +389,10 @@ option mode 'sta'
 option network 'WAN_WIFI_2'
 option ifname 'wlan1'
 EOL
+echo -e "End wireless config.\n"
 
 # configure apinger connectivity monitoring
+echo -e "\nBegin apinger config."
 cat <<'EOL' | tee "$workdir"/files/etc/apinger.conf
 # privileged user required to write to sysfs
 user "root"
@@ -426,20 +432,26 @@ target "1.1.1.1" {
   alarms "internet"
 }
 EOL
+echo -e "End apinger config.\n"
 
 # create an empty script for the rfkill button
 # we only want to disable it via script or webui
+echo -e "\nBegin rfkill toggle disable."
 cat <<'EOL' | tee "$workdir"/files/etc/rc.button/rfkill
 # do nothing on rfkill switch toggle
 EOL
+echo -e "End rfkill toggle disable.\n"
 
 # create an empty script for the wps trigger
 # we only want wps to be activated via script
+echo -e "\nBegin wps button disable."
 cat <<'EOL' | tee "$workdir"/files/etc/rc.button/wps
 # do nothing on wps button press
 EOL
+echo -e "End wps button disable.\n"
 
 # create relayd address update script
+echo -e "\nBegin /etc/init.d/relayaddr script."
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
 
@@ -609,13 +621,17 @@ if [ "$SHOULD_RESTART" = "true" ]; then
   /etc/init.d/relayd restart
 fi
 EOL
+echo -e "End /etc/init.d/relayaddr script.\n"
 
 # add root crontab to run the relayd address update script and connectivity test every minute
+echo -e "\nBegin root crontab."
 cat <<'EOL' | tee "$workdir"/files/etc/crontabs/root
 * * * * * /etc/init.d/relayaddr
 EOL
+echo -e "End root crontab.\n"
 
 # create usbmuxd launch script for iphone tether detection
+echo -e "\nBegin /etc/init.d/usbmux script."
 cat <<'EOL' | tee "$workdir"/files/etc/init.d/usbmux
 #!/bin/sh /etc/rc.common
 
@@ -630,20 +646,26 @@ stop() {
   kill -9 "$(pgrep usbmuxd)"
 }
 EOL
+echo -e "End /etc/init.d/usbmux script.\n"
 
 # add uci-defaults script to enable usbmuxd service
+echo -e "\nBegin usbmux service enable."
 cat <<'EOL' | tee "$workdir"/files/etc/uci-defaults/usbmux
 #!/bin/sh
 /etc/init.d/usbmux enable
 EOL
+echo -e "End usbmux service enable.\n"
 
 # add hotplug event triggering relayd update
+echo -e "\nBegin relayaddr hotplug event."
 cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/01-relayaddr
 # update relay interfaces
 /etc/init.d/relayaddr
 EOL
+echo -e "End relayaddr hotplug event.\n"
 
 # add html form for updating ssid and psk
+echo -e "\nBegin /www/wifi.html."
 cat <<'EOL' | tee "$workdir"/files/www/wifi.html
 <html>
 <head>
@@ -708,8 +730,10 @@ function prefillForm()
 </body>
 </html>
 EOL
+echo -e "End /www/wifi.html.\n"
 
 # add php script for updating ssid and password
+echo -e "\nBegin /www/wifi.php."
 cat <<'EOL' | tee "$workdir"/files/www/wifi.php
 <?php
 
@@ -781,8 +805,10 @@ echo "Submitted changes successfully.";
 
 <a href="/wifi.html">Return to Main Page</a>
 EOL
+echo -e "End /www/wifi.php.\n"
 
 # add php script for scanning nearby ssids
+echo -e "\nBegin /www/scan.php."
 cat <<'EOL' | tee "$workdir"/files/www/scan.php
 <?php
 
@@ -807,23 +833,24 @@ echo "<pre>$ssids</pre>";
 
 <a href="/wifi.html">Return to Main Page</a>
 EOL
+echo -e "End /www/scan.php.\n"
 
 # finished writing config files
-echo "Config files written."
+echo -e "Config files written.\n"
 
 # fix permissions
-echo "Setting permissions for all modified directories..."
+echo -e "\nSetting permissions for all modified directories..."
 chmod 0755 "$workdir"/files/etc/rc.button/rfkill
 chmod 0755 "$workdir"/files/etc/rc.button/wps
 chmod 0755 "$workdir"/files/etc/init.d/relayaddr
 chmod 0755 "$workdir"/files/etc/init.d/usbmux
 chmod 0755 "$workdir"/files/etc/uci-defaults/usbmux
-echo "Permissions set."
+echo -e "Permissions set.\n"
 
 # build the image; the output will be located in $basedir/bin/targets/$target/generic/
 # - image for web ui upgrade: "$HOME"/"$hostname"/factory.bin
 # - image for cli upgrade: "$HOME"/"$hostname"/sysupgrade.bin
-echo "Building OpenWRT image..."
+echo -e "\nBuilding OpenWRT image..."
 cd "$workdir" && \
 make image \
 PROFILE="$profile" \
