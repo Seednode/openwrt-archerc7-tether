@@ -277,8 +277,8 @@ option trigger 'none'
 option default '0'
 
 config led 'led_usb2'
-option sysfs 'tp-link:green:usb2'
 option name 'usb2'
+option sysfs 'tp-link:green:usb2'
 option trigger 'none'
 option default '0'
 
@@ -413,10 +413,10 @@ alarm down "internet" {
   time 3s
 
   # turn off system light when connectivity is lost
-  command on "uci set system.led_qss.default='0' && uci commit"
+  command on "echo '0' > /sys/class/leds/tp-link:green:qss/brightness"
 
   # turn on system light when connectivity is restored
-  command on "uci set system.led_qss.default='1' && uci commit"
+  command off "echo '255' > /sys/class/leds/tp-link:green:qss/brightness"
 }
 
 # targets to probe
@@ -570,17 +570,17 @@ else
 fi
 
 # update status leds if needed
-CURRENT_LED_STATUS="$(uci get system.led_"$NEW_RELAY_LED".default)"
-if ! [ "$CURRENT_LED_STATUS" = "1" ]; then
+CURRENT_LED_STATUS="$(cat /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/brightness)"
+if ! [ "$CURRENT_LED_STATUS" = "255" ]; then
   # turn off all inactive uplink leds
   for led in usb1 usb2 wlan2g wlan5g; do
     if ! [ "$led" = "$NEW_RELAY_LED" ]; then
-      uci set system.led_"$led".default='0'
+       echo '0' > /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/brightness
     fi
   done
 
   # turn on the led for the active uplink
-  uci set system.led_"$NEW_RELAY_LED".default='1'
+  echo '255' > /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/brightness
 
   # queue changes
   SHOULD_COMMIT="true"
