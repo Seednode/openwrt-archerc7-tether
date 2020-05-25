@@ -413,10 +413,10 @@ alarm down "internet" {
   time 3s
 
   # turn off system light when connectivity is lost
-  command on "echo '0' > /sys/class/leds/tp-link:green:qss/brightness"
+  command on "echo '0' | tee /sys/class/leds/tp-link:green:qss/brightness >/dev/null"
 
   # turn on system light when connectivity is restored
-  command off "echo '255' > /sys/class/leds/tp-link:green:qss/brightness"
+  command off "echo '255' | tee /sys/class/leds/tp-link:green:qss/brightness >/dev/null"
 }
 
 # targets to probe
@@ -575,12 +575,12 @@ if ! [ "$CURRENT_LED_STATUS" = "255" ]; then
   # turn off all inactive uplink leds
   for led in usb1 usb2 wlan2g wlan5g; do
     if ! [ "$led" = "$NEW_RELAY_LED" ]; then
-       echo '0' > /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/brightness
+       echo '0' | tee /sys/class/leds/tp-link:green:"$led"/brightness >/dev/null
     fi
   done
 
   # turn on the led for the active uplink
-  echo '255' > /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/brightness
+  echo '255' | tee /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/brightness >/dev/null
 
   # queue changes
   SHOULD_COMMIT="true"
