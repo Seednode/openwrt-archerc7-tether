@@ -418,10 +418,10 @@ alarm down "internet" {
   # trigger after 3 seconds of outage
   time 3s
 
-  # turn off system light when connectivity is lost
+  # turn off wps light when connectivity is lost
   command on "echo '0' | tee /sys/class/leds/tp-link:green:qss/brightness >/dev/null"
 
-  # turn on system light when connectivity is restored
+  # turn on wps light when connectivity is restored
   command off "echo '255' | tee /sys/class/leds/tp-link:green:qss/brightness >/dev/null"
 }
 
