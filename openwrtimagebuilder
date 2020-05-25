@@ -252,10 +252,40 @@ option enabled '1'
 list server 'time.nist.gov'
 list server 'time.windows.com'
 
-config led
+config led 'led_system'
+option name 'system'
 option sysfs 'tp-link:green:system'
 option trigger 'none'
-option name 'system'
+option default '0'
+
+config led 'led_wlan2g'
+option name 'wlan2g'
+option sysfs 'tp-link:green:wlan2g'
+option trigger 'none'
+option default '0'
+
+config led 'led_wlan5g'
+option name 'wlan5g'
+option sysfs 'tp-link:green:wlan5g'
+option trigger 'none'
+option default '0'
+
+config led 'led_usb1'
+option name 'usb1'
+option sysfs 'tp-link:green:usb1'
+option trigger 'none'
+option default '0'
+
+config led 'led_usb2'
+option sysfs 'tp-link:green:usb2'
+option name 'usb2'
+option trigger 'none'
+option default '0'
+
+config led 'led_qss'
+option name 'qss'
+option sysfs 'tp-link:green:qss'
+option trigger 'none'
 option default '0'
 EOL
 
@@ -383,10 +413,10 @@ alarm down "internet" {
   time 3s
 
   # turn off system light when connectivity is lost
-  command on "echo 'none' | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null"
+  command on "uci set system.led_qss.default='0' && uci commit"
 
   # turn on system light when connectivity is restored
-  command off "echo 'default-on' | tee /sys/class/leds/tp-link:green:qss/trigger >/dev/null"
+  command on "uci set system.led_qss.default='1' && uci commit"
 }
 
 # targets to probe
@@ -540,17 +570,20 @@ else
 fi
 
 # update status leds if needed
-CURRENT_LED_STATUS="$(cat /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger)"
-if ! [ "$CURRENT_LED_STATUS" = "default_on" ]; then
+CURRENT_LED_STATUS="$(uci get system.led_"$NEW_RELAY_LED".default)"
+if ! [ "$CURRENT_LED_STATUS" = "1" ]; then
   # turn off all inactive uplink leds
   for led in usb1 usb2 wlan2g wlan5g; do
     if ! [ "$led" = "$NEW_RELAY_LED" ]; then
-      echo "none" | tee /sys/class/leds/tp-link:green:"$led"/trigger >/dev/null
+      uci set system.led_"$led".default='0'
     fi
   done
 
   # turn on the led for the active uplink
-  echo "default-on" | tee /sys/class/leds/tp-link:green:"$NEW_RELAY_LED"/trigger >/dev/null
+  uci set system.led_"$NEW_RELAY_LED".default='1'
+
+  # queue changes
+  SHOULD_COMMIT="true"
 fi
 
 # commit changes if needed
