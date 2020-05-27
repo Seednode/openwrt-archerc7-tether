@@ -867,3 +867,12 @@ echo -e "Finished building OpenWRT image.\n\nBuild finished at $(date +%Y/%m/%d-
 
 # display build completion status
 echo -e "Build complete!\n"
+
+# prompt for log review (commented out to keep script fully unattended)
+#echo "Would you like to view the build logs?"
+#select yn in "Yes" "No"; do
+#  case $yn in
+#    Yes ) less "$logfile"; break;;
+#    No ) exit;;
+#  esac
+#done
