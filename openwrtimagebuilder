@@ -64,7 +64,7 @@ logfile="$basedir/build-$(date +%Y%m%d%H%M%S).log"
 imagebuilderdir="$basedir/imagebuilder"
 
 # set OpenWRT imagebuilder version to use
-release="19.07.3"
+release="19.07.4"
 target="ath79"
 profile="tplink_archer-c7-v2"
 version="openwrt-imagebuilder-$release-$target-generic.Linux-x86_64"
