@@ -54,15 +54,12 @@ fi
 hostname="tether"
 
 # set base directory
-readonly base_dir
 base_dir="$(pwd)/${hostname}"
 
 # set log file location
-readonly log_file
 log_file="${base_dir}/build-$(date +%Y%m%d%H%M%S).log"
 
 # set imagebuilder directory
-readonly image_builder_dir
 image_builder_dir="${base_dir}/imagebuilder"
 
 # set OpenWRT imagebuilder version to use
