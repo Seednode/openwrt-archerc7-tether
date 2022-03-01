@@ -124,7 +124,7 @@ echo -e "Finished creating directories.\n"
 echo -e "\nGenerating system config files."
 
 # set login credentials
-echo -e "\nBegin login credentials."
+echo -e "\n### Begin login credentials. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/shadow
 root:$1$Bi5SZzpW$o3ymak7u35zX.fuuGCjt2.:18396:0:99999:7:::
 daemon:*:0:0:99999:7:::
@@ -133,10 +133,10 @@ network:*:0:0:99999:7:::
 nobody:*:0:0:99999:7:::
 dnsmasq:x:0:0:99999:7:::
 EOL
-echo -e "End login credentials.\n"
+echo -e "### End login credentials. ###\n"
 
 # configure shell
-echo -e "\nBegin shell config."
+echo -e "\n### Begin shell config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/profile
 #!/bin/sh
 [ -e /tmp/.failsafe ] && export FAILSAFE=1
@@ -198,10 +198,10 @@ service() {
         /etc/init.d/$@
 }
 EOL
-echo -e "End shell config.\n"
+echo -e "### End shell config. ###\n"
 
 # create dnsmasq configs and disable win2k filtering (which breaks jabber/xmpp)
-echo -e "\nBegin dnsmasq config."
+echo -e "\n### Begin dnsmasq config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/config/dhcp
 config dnsmasq
 option domainneeded '1'
@@ -246,10 +246,10 @@ option maindhcp '0'
 option leasefile '/tmp/hosts/odhcpd'
 option leasetrigger '/usr/sbin/odhcpd-update'
 EOL
-echo -e "End dnsmasq config.\n"
+echo -e "### End dnsmasq config. ###\n"
 
 # set default firewall policy to allow all traffic; this is a relay, not a firewall
-echo -e "\nBegin firewall config."
+echo -e "\n### Begin firewall config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/config/firewall
 config defaults
 option input 'ACCEPT'
@@ -260,19 +260,19 @@ option synflood_protect '1'
 option flow_offloading '1'
 option flow_offloading_hw '1'
 EOL
-echo -e "End firewall config.\n"
+echo -e "### End firewall config. ###\n"
 
 # set ssh listen port to tcp/9022
-echo -e "\nBegin dropbear config."
+echo -e "\n### Begin dropbear config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/config/dropbear
 config dropbear
 option PasswordAuth 'on'
 option Port '9022'
 EOL
-echo -e "End dropbear config.\n"
+echo -e "### End dropbear config. ###\n"
 
 # set up a uhttpd instance listening on 443/tcp
-echo -e "\nBegin uhttpd config."
+echo -e "\n### Begin uhttpd config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/config/uhttpd
 config uhttpd 'luci'
 list listen_https '0.0.0.0:443'
@@ -298,10 +298,10 @@ option state 'Minnesota'
 option location 'Minneapolis'
 option commonname 'OpenWRT'
 EOL
-echo -e "End uhttp config.\n"
+echo -e "### End uhttp config. ###\n"
 
 # set hostname, timezone, and other system info
-echo -e "\nBegin system config."
+echo -e "\n### Begin system config. ###"
 cat <<EOL | tee "${work_dir}"/files/etc/config/system
 config system
 option cronloglevel '8'
@@ -352,10 +352,10 @@ option sysfs 'tp-link:green:qss'
 option trigger 'none'
 option default '0'
 EOL
-echo -e "End system config.\n"
+echo -e "### End system config. ###\n"
 
 # configure interfaces
-echo -e "\nBegin interface config."
+echo -e "\n### Begin interface config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/config/network
 config interface 'loopback'
 option ifname 'lo'
@@ -413,10 +413,10 @@ option device 'switch0'
 option vlan '2'
 option ports '1 6'
 EOL
-echo -e "End interface config.\n"
+echo -e "### End interface config. ###\n"
 
 # set default ssid/password
-echo -e "\nBegin wireless config."
+echo -e "\n### Begin wireless config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/config/wireless
 config wifi-device 'radio0'
 option type 'mac80211'
@@ -453,10 +453,10 @@ option mode 'sta'
 option network 'WAN_WIFI_2'
 option ifname 'wlan1'
 EOL
-echo -e "End wireless config.\n"
+echo -e "### End wireless config. ###\n"
 
 # configure apinger connectivity monitoring
-echo -e "\nBegin apinger config."
+echo -e "\n### Begin apinger config. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/apinger.conf
 # privileged user required to write to sysfs
 user "root"
@@ -496,26 +496,26 @@ target "1.1.1.1" {
   alarms "internet"
 }
 EOL
-echo -e "End apinger config.\n"
+echo -e "### End apinger config. ###\n"
 
 # create an empty script for the rfkill button
 # we only want to disable it via script or webui
-echo -e "\nBegin rfkill toggle disable."
+echo -e "\n### Begin rfkill toggle disable. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/rc.button/rfkill
 # do nothing on rfkill switch toggle
 EOL
-echo -e "End rfkill toggle disable.\n"
+echo -e "### End rfkill toggle disable. ###\n"
 
 # create an empty script for the wps trigger
 # we only want wps to be activated via script
-echo -e "\nBegin wps button disable."
+echo -e "\n### Begin wps button disable. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/rc.button/wps
 # do nothing on wps button press
 EOL
-echo -e "End wps button disable.\n"
+echo -e "### End wps button disable. ###\n"
 
 # create relayd address update script
-echo -e "\nBegin /etc/init.d/relayaddr script."
+echo -e "\n### Begin /etc/init.d/relayaddr script. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
 
@@ -686,17 +686,17 @@ if [ "${should_restart}" = "true" ]; then
   /etc/init.d/relayd restart
 fi
 EOL
-echo -e "End /etc/init.d/relayaddr script.\n"
+echo -e "### End /etc/init.d/relayaddr script. ###\n"
 
 # add root crontab to run the relayd address update script and connectivity test every minute
-echo -e "\nBegin root crontab."
+echo -e "\n### Begin root crontab. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/crontabs/root
 * * * * * /etc/init.d/relayaddr
 EOL
-echo -e "End root crontab.\n"
+echo -e "### End root crontab. ###\n"
 
 # create usbmuxd launch script for iphone tether detection
-echo -e "\nBegin /etc/init.d/usbmux script."
+echo -e "\n### Begin /etc/init.d/usbmux script. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/init.d/usbmux
 #!/bin/sh /etc/rc.common
 
@@ -711,26 +711,26 @@ stop() {
   kill -9 "$(pgrep usbmuxd)"
 }
 EOL
-echo -e "End /etc/init.d/usbmux script.\n"
+echo -e "### End /etc/init.d/usbmux script. ###\n"
 
 # add uci-defaults script to enable usbmuxd service
-echo -e "\nBegin usbmux service enable."
+echo -e "\n### Begin usbmux service enable. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/uci-defaults/usbmux
 #!/bin/sh
 /etc/init.d/usbmux enable
 EOL
-echo -e "End usbmux service enable.\n"
+echo -e "### End usbmux service enable. ###\n"
 
 # add hotplug event triggering relayd update
-echo -e "\nBegin relayaddr hotplug event."
+echo -e "\n### Begin relayaddr hotplug event. ###"
 cat <<'EOL' | tee "${work_dir}"/files/etc/hotplug.d/iface/01-relayaddr
 # update relay interfaces
 /etc/init.d/relayaddr
 EOL
-echo -e "End relayaddr hotplug event.\n"
+echo -e "### End relayaddr hotplug event. ###\n"
 
 # add html form for updating ssid and psk
-echo -e "\nBegin /www/wifi.html."
+echo -e "\n### Begin /www/wifi.html. ###"
 cat <<'EOL' | tee "${work_dir}"/files/www/wifi.html
 <html>
 <head>
@@ -795,10 +795,10 @@ function prefillForm()
 </body>
 </html>
 EOL
-echo -e "End /www/wifi.html.\n"
+echo -e "### End /www/wifi.html. ###\n"
 
 # add php script for updating ssid and password
-echo -e "\nBegin /www/wifi.php."
+echo -e "\n### Begin /www/wifi.php. ###"
 cat <<'EOL' | tee "${work_dir}"/files/www/wifi.php
 <?php
 
@@ -870,10 +870,10 @@ echo "Submitted changes successfully.";
 
 <a href="/wifi.html">Return to Main Page</a>
 EOL
-echo -e "End /www/wifi.php.\n"
+echo -e "### End /www/wifi.php. ###\n"
 
 # add php script for scanning nearby ssids
-echo -e "\nBegin /www/scan.php."
+echo -e "\n### Begin /www/scan.php. ###"
 cat <<'EOL' | tee "${work_dir}"/files/www/scan.php
 <?php
 
@@ -898,7 +898,7 @@ echo "<pre>$ssids</pre>";
 
 <a href="/wifi.html">Return to Main Page</a>
 EOL
-echo -e "End /www/scan.php.\n"
+echo -e "### End /www/scan.php. ###\n"
 
 # finished writing config files
 echo -e "Config files written.\n"
