@@ -38,7 +38,7 @@
 # tp-link:green:wlan5g (indicates whether 5ghz uplink is in use)
 # tp-link:green:qss (indicates internet connectivity status)
 
-## rear lcds, from top to bottom
+## rear leds, from top to bottom
 # tp-link:green:usb1 (indicates whether usb uplink 1 is in use)
 # tp-link:green:usb2 (indicates whether usb uplink 2 is in use)
 
@@ -55,68 +55,68 @@ fi
 hostname="tether"
 
 # set base directory
-basedir="$(pwd)/$hostname"
+base_dir="$(pwd)/$hostname"
 
-# set logfile location
-logfile="$basedir/build-$(date +%Y%m%d%H%M%S).log"
+# set log file location
+log_file="${base_dir}/build-$(date +%Y%m%d%H%M%S).log"
 
 # set imagebuilder directory
-imagebuilderdir="$basedir/imagebuilder"
+image_builder_dir="${base_dir}/imagebuilder"
 
 # set OpenWRT imagebuilder version to use
-release="19.07.4"
+release="21.02.2"
 target="ath79"
 profile="tplink_archer-c7-v2"
-version="openwrt-imagebuilder-$release-$target-generic.Linux-x86_64"
-tarball="https://downloads.openwrt.org/releases/$release/targets/$target/generic/$version.tar.xz"
+version="openwrt-imagebuilder-${release}-${target}-generic.Linux-x86_64"
+tarball="https://downloads.openwrt.org/releases/${release}/targets/${target}/generic/${version}.tar.xz"
 
 # delete any old builds if they exist
-if [ -d "$imagebuilderdir/$version" ]; then
-  echo -e "\nRemoving old imagebuilder files..." >> "$logfile" 2>&1
-  rm -rf "$imagebuilderdir/$version"
+if [ -d "${image_builder_dir}/${version}" ]; then
+  echo -e "\nRemoving old imagebuilder files..." >> "${log_file}" 2>&1
+  rm -rf "${image_builder_dir}/${version}"
 fi
 
 # create base directory for account
-mkdir -p "$imagebuilderdir"
+mkdir -p "${image_builder_dir}"
 
 # display log location
-echo -e "\nLogging all build output to $logfile"
+echo -e "\nLogging all build output to ${log_file}"
 
 # display git commit hash
-echo -e "\nBuilding from commit $(git rev-parse HEAD)." >> "$logfile" 2>&1
+echo -e "\nBuilding from commit $(git rev-parse HEAD)." >> "${log_file}" 2>&1
 
-# prepend timestamp to logfile
-echo -e "\nBuild began at $(date +%Y/%m/%d-%H:%M).\n" >> "$logfile" 2>&1
+# prepend timestamp to log_file
+echo -e "\nBuild began at $(date +%Y/%m/%d-%H:%M).\n" >> "${log_file}" 2>&1
 
 # wrap the script into a function for logging purposes
 {
 
 # display imagebuilder version
-echo "Imagebuilder version set to $version"
+echo "Imagebuilder version set to ${version}"
 
 # display imagebuilder directory
-echo "Imagebuilder directory is $imagebuilderdir"
+echo "Imagebuilder directory is ${image_builder_dir}"
 
 # set and display working directory
-workdir="$imagebuilderdir/$version"
-echo "Working directory is $workdir"
+workdir="${image_builder_dir}/${version}"
+echo "Working directory is ${work_dir}"
 
 # download and extract the openwrt imagebuilder tool
 echo "Downloading imagebuilder tarball..."
-mkdir -p "$imagebuilderdir"
-curl -s "$tarball" | tar -xJf - -C "$imagebuilderdir"
+mkdir -p "${image_builder_dir}"
+curl -s "$tarball" | tar -xJf - -C "${image_builder_dir}"
 echo "Imagebuilder downloaded."
 
 # create directory for file overrides; this will serve as the effective / for any overwriting files
 # i.e. files/etc/dropbear/authorized_keys will be located at /etc/dropbear/authorized_keys in the final squashfs image
 echo -e "\nCreating required directories..."
-mkdir -p "$workdir"/files/etc/config
-mkdir -p "$workdir"/files/etc/crontabs
-mkdir -p "$workdir"/files/etc/hotplug.d/iface
-mkdir -p "$workdir"/files/etc/init.d
-mkdir -p "$workdir"/files/etc/rc.button
-mkdir -p "$workdir"/files/etc/uci-defaults
-mkdir -p "$workdir"/files/www
+mkdir -p "${work_dir}"/files/etc/config
+mkdir -p "${work_dir}"/files/etc/crontabs
+mkdir -p "${work_dir}"/files/etc/hotplug.d/iface
+mkdir -p "${work_dir}"/files/etc/init.d
+mkdir -p "${work_dir}"/files/etc/rc.button
+mkdir -p "${work_dir}"/files/etc/uci-defaults
+mkdir -p "${work_dir}"/files/www
 
 # finished creating directories
 echo -e "Finished creating directories.\n"
@@ -126,7 +126,7 @@ echo -e "\nGenerating system config files."
 
 # set login credentials
 echo -e "\nBegin login credentials."
-cat <<'EOL' | tee "$workdir"/files/etc/shadow
+cat <<'EOL' | tee "${work_dir}"/files/etc/shadow
 root:$1$Bi5SZzpW$o3ymak7u35zX.fuuGCjt2.:18396:0:99999:7:::
 daemon:*:0:0:99999:7:::
 ftp:*:0:0:99999:7:::
@@ -138,7 +138,7 @@ echo -e "End login credentials.\n"
 
 # configure shell
 echo -e "\nBegin shell config."
-cat <<'EOL' | tee "$workdir"/files/etc/profile
+cat <<'EOL' | tee "${work_dir}"/files/etc/profile
 #!/bin/sh
 [ -e /tmp/.failsafe ] && export FAILSAFE=1
 
@@ -203,7 +203,7 @@ echo -e "End shell config.\n"
 
 # create dnsmasq configs and disable win2k filtering (which breaks jabber/xmpp)
 echo -e "\nBegin dnsmasq config."
-cat <<'EOL' | tee "$workdir"/files/etc/config/dhcp
+cat <<'EOL' | tee "${work_dir}"/files/etc/config/dhcp
 config dnsmasq
 option domainneeded '1'
 option localise_queries '1'
@@ -251,7 +251,7 @@ echo -e "End dnsmasq config.\n"
 
 # set default firewall policy to allow all traffic; this is a relay, not a firewall
 echo -e "\nBegin firewall config."
-cat <<'EOL' | tee "$workdir"/files/etc/config/firewall
+cat <<'EOL' | tee "${work_dir}"/files/etc/config/firewall
 config defaults
 option input 'ACCEPT'
 option forward 'ACCEPT'
@@ -265,7 +265,7 @@ echo -e "End firewall config.\n"
 
 # set ssh listen port to tcp/9022
 echo -e "\nBegin dropbear config."
-cat <<'EOL' | tee "$workdir"/files/etc/config/dropbear
+cat <<'EOL' | tee "${work_dir}"/files/etc/config/dropbear
 config dropbear
 option PasswordAuth 'on'
 option Port '9022'
@@ -274,7 +274,7 @@ echo -e "End dropbear config.\n"
 
 # set up a uhttpd instance listening on 443/tcp
 echo -e "\nBegin uhttpd config."
-cat <<'EOL' | tee "$workdir"/files/etc/config/uhttpd
+cat <<'EOL' | tee "${work_dir}"/files/etc/config/uhttpd
 config uhttpd 'luci'
 list listen_https '0.0.0.0:443'
 option home '/www'
@@ -303,7 +303,7 @@ echo -e "End uhttp config.\n"
 
 # set hostname, timezone, and other system info
 echo -e "\nBegin system config."
-cat <<EOL | tee "$workdir"/files/etc/config/system
+cat <<EOL | tee "${work_dir}"/files/etc/config/system
 config system
 option cronloglevel '8'
 option zonename 'America/Chicago'
@@ -357,7 +357,7 @@ echo -e "End system config.\n"
 
 # configure interfaces
 echo -e "\nBegin interface config."
-cat <<'EOL' | tee "$workdir"/files/etc/config/network
+cat <<'EOL' | tee "${work_dir}"/files/etc/config/network
 config interface 'loopback'
 option ifname 'lo'
 option proto 'static'
@@ -418,7 +418,7 @@ echo -e "End interface config.\n"
 
 # set default ssid/password
 echo -e "\nBegin wireless config."
-cat <<'EOL' | tee "$workdir"/files/etc/config/wireless
+cat <<'EOL' | tee "${work_dir}"/files/etc/config/wireless
 config wifi-device 'radio0'
 option type 'mac80211'
 option hwmode '11a'
@@ -458,7 +458,7 @@ echo -e "End wireless config.\n"
 
 # configure apinger connectivity monitoring
 echo -e "\nBegin apinger config."
-cat <<'EOL' | tee "$workdir"/files/etc/apinger.conf
+cat <<'EOL' | tee "${work_dir}"/files/etc/apinger.conf
 # privileged user required to write to sysfs
 user "root"
 group "root"
@@ -502,7 +502,7 @@ echo -e "End apinger config.\n"
 # create an empty script for the rfkill button
 # we only want to disable it via script or webui
 echo -e "\nBegin rfkill toggle disable."
-cat <<'EOL' | tee "$workdir"/files/etc/rc.button/rfkill
+cat <<'EOL' | tee "${work_dir}"/files/etc/rc.button/rfkill
 # do nothing on rfkill switch toggle
 EOL
 echo -e "End rfkill toggle disable.\n"
@@ -510,14 +510,14 @@ echo -e "End rfkill toggle disable.\n"
 # create an empty script for the wps trigger
 # we only want wps to be activated via script
 echo -e "\nBegin wps button disable."
-cat <<'EOL' | tee "$workdir"/files/etc/rc.button/wps
+cat <<'EOL' | tee "${work_dir}"/files/etc/rc.button/wps
 # do nothing on wps button press
 EOL
 echo -e "End wps button disable.\n"
 
 # create relayd address update script
 echo -e "\nBegin /etc/init.d/relayaddr script."
-cat <<'EOL' | tee "$workdir"/files/etc/init.d/relayaddr
+cat <<'EOL' | tee "${work_dir}"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
 
 # check for lock file
@@ -690,14 +690,14 @@ echo -e "End /etc/init.d/relayaddr script.\n"
 
 # add root crontab to run the relayd address update script and connectivity test every minute
 echo -e "\nBegin root crontab."
-cat <<'EOL' | tee "$workdir"/files/etc/crontabs/root
+cat <<'EOL' | tee "${work_dir}"/files/etc/crontabs/root
 * * * * * /etc/init.d/relayaddr
 EOL
 echo -e "End root crontab.\n"
 
 # create usbmuxd launch script for iphone tether detection
 echo -e "\nBegin /etc/init.d/usbmux script."
-cat <<'EOL' | tee "$workdir"/files/etc/init.d/usbmux
+cat <<'EOL' | tee "${work_dir}"/files/etc/init.d/usbmux
 #!/bin/sh /etc/rc.common
 
 START=30
@@ -715,7 +715,7 @@ echo -e "End /etc/init.d/usbmux script.\n"
 
 # add uci-defaults script to enable usbmuxd service
 echo -e "\nBegin usbmux service enable."
-cat <<'EOL' | tee "$workdir"/files/etc/uci-defaults/usbmux
+cat <<'EOL' | tee "${work_dir}"/files/etc/uci-defaults/usbmux
 #!/bin/sh
 /etc/init.d/usbmux enable
 EOL
@@ -723,7 +723,7 @@ echo -e "End usbmux service enable.\n"
 
 # add hotplug event triggering relayd update
 echo -e "\nBegin relayaddr hotplug event."
-cat <<'EOL' | tee "$workdir"/files/etc/hotplug.d/iface/01-relayaddr
+cat <<'EOL' | tee "${work_dir}"/files/etc/hotplug.d/iface/01-relayaddr
 # update relay interfaces
 /etc/init.d/relayaddr
 EOL
@@ -731,7 +731,7 @@ echo -e "End relayaddr hotplug event.\n"
 
 # add html form for updating ssid and psk
 echo -e "\nBegin /www/wifi.html."
-cat <<'EOL' | tee "$workdir"/files/www/wifi.html
+cat <<'EOL' | tee "${work_dir}"/files/www/wifi.html
 <html>
 <head>
 
@@ -799,7 +799,7 @@ echo -e "End /www/wifi.html.\n"
 
 # add php script for updating ssid and password
 echo -e "\nBegin /www/wifi.php."
-cat <<'EOL' | tee "$workdir"/files/www/wifi.php
+cat <<'EOL' | tee "${work_dir}"/files/www/wifi.php
 <?php
 
 // initialize variables with easier to read names
@@ -874,7 +874,7 @@ echo -e "End /www/wifi.php.\n"
 
 # add php script for scanning nearby ssids
 echo -e "\nBegin /www/scan.php."
-cat <<'EOL' | tee "$workdir"/files/www/scan.php
+cat <<'EOL' | tee "${work_dir}"/files/www/scan.php
 <?php
 
 // initialize variables with easier to read names
@@ -905,39 +905,30 @@ echo -e "Config files written.\n"
 
 # fix permissions
 echo -e "\nSetting permissions for all modified directories..."
-chmod 0755 "$workdir"/files/etc/rc.button/rfkill
-chmod 0755 "$workdir"/files/etc/rc.button/wps
-chmod 0755 "$workdir"/files/etc/init.d/relayaddr
-chmod 0755 "$workdir"/files/etc/init.d/usbmux
-chmod 0755 "$workdir"/files/etc/uci-defaults/usbmux
+chmod 0755 "${work_dir}"/files/etc/rc.button/rfkill
+chmod 0755 "${work_dir}"/files/etc/rc.button/wps
+chmod 0755 "${work_dir}"/files/etc/init.d/relayaddr
+chmod 0755 "${work_dir}"/files/etc/init.d/usbmux
+chmod 0755 "${work_dir}"/files/etc/uci-defaults/usbmux
 echo -e "Permissions set.\n"
 
-# build the image; the output will be located in $basedir/bin/targets/$target/generic/
+# build the image; the output will be located in ${base_dir}/bin/targets/${target}/generic/
 # - image for web ui upgrade: "$HOME"/"$hostname"/factory.bin
 # - image for cli upgrade: "$HOME"/"$hostname"/sysupgrade.bin
 echo -e "\nBuilding OpenWRT image..."
-cd "$workdir" && \
+cd "${work_dir}" && \
 make image \
-PROFILE="$profile" \
-PACKAGES="luci-ssl php7 php7-cgi php7-mod-ctype qrencode vnstat apinger luci-app-vnstat iwinfo curl tcpdump ncat snmp-utils wireguard luci-app-wireguard mtr arp-scan wpad hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
+PROFILE="${profile}" \
+PACKAGES="luci-ssl php7 php7-cgi php7-mod-ctype qrencode vnstat apinger luci-app-vnstat iwinfo curl tcpdump ncat snmp-utils luci-app-wireguard mtr arp-scan hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
 FILES=files && \
-cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-"$profile"-squashfs-factory-us.bin "$basedir"/factory.bin && \
-cp "$workdir"/bin/targets/"$target"/generic/openwrt-"$release"-"$target"-generic-"$profile"-squashfs-sysupgrade.bin "$basedir"/sysupgrade.bin
+cp "${work_dir}"/bin/targets/"${target}"/generic/openwrt-"${release}"-"${target}"-generic-"${profile}"-squashfs-factory-us.bin "${base_dir}"/factory.bin && \
+cp "${work_dir}"/bin/targets/"${target}"/generic/openwrt-"${release}"-"${target}"-generic-"${profile}"-squashfs-sysupgrade.bin "${base_dir}"/sysupgrade.bin
 
 # end function
-} 2>&1 | tee -a "$logfile" >/dev/null
+} 2>&1 | tee -a "${log_file}" >/dev/null
 
-# append timestamp to logfile
-echo -e "Finished building OpenWRT image.\n\nBuild finished at $(date +%Y/%m/%d-%H:%M).\n" >> "$logfile"
+# append timestamp to log_file
+echo -e "Finished building OpenWRT image.\n\nBuild finished at $(date +%Y/%m/%d-%H:%M).\n" >> "${log_file}"
 
 # display build completion status
 echo -e "Build complete!\n"
-
-# prompt for log review (commented out to keep script fully unattended)
-#echo "Would you like to view the build logs?"
-#select yn in "Yes" "No"; do
-#  case $yn in
-#    Yes ) less "$logfile"; break;;
-#    No ) exit;;
-#  esac
-#done
