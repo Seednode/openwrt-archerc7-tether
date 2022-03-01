@@ -54,12 +54,15 @@ fi
 hostname="tether"
 
 # set base directory
+readonly base_dir
 base_dir="$(pwd)/${hostname}"
 
 # set log file location
+readonly log_file
 log_file="${base_dir}/build-$(date +%Y%m%d%H%M%S).log"
 
 # set imagebuilder directory
+readonly image_builder_dir
 image_builder_dir="${base_dir}/imagebuilder"
 
 # set OpenWRT imagebuilder version to use
@@ -72,7 +75,7 @@ tarball="https://downloads.openwrt.org/releases/${release}/targets/${target}/gen
 # delete any old builds if they exist
 if [ -d "${image_builder_dir}/${version}" ]; then
   echo -e "\nRemoving old imagebuilder files..." >> "${log_file}" 2>&1
-  rm -rf "${image_builder_dir}/${version}"
+  rm -rf "${image_builder_dir:?}/${version}"
 fi
 
 # create base directory for account
@@ -97,7 +100,7 @@ echo "Imagebuilder version set to ${version}"
 echo "Imagebuilder directory is ${image_builder_dir}"
 
 # set and display working directory
-workdir="${image_builder_dir}/${version}"
+work_dir="${image_builder_dir}/${version}"
 echo "Working directory is ${work_dir}"
 
 # download and extract the openwrt imagebuilder tool
@@ -520,167 +523,168 @@ cat <<'EOL' | tee "${work_dir}"/files/etc/init.d/relayaddr
 #!/usr/bin/env ash
 
 # check for lock file
-if { set -C; 2>/dev/null >/tmp/relayaddr.lock; }; then
-  trap "rm -f /tmp/relayaddr.lock" EXIT
+lock_file="/tmp/relayaddr.lock"
+if { set -C; 2>/dev/null >"${lock_file}"; }; then
+  trap "rm -f ${lock_file}" EXIT
 else
   echo "Another instance is already running. Exiting."
   exit 1
 fi
 
 # retrieve current relay ip address
-OLD_RELAY_IP="$(uci get network.RELAY.ipaddr)"
+old_relay_ip="$(uci get network.RELAY.ipaddr)"
 
 # retrieve current relay interface
-OLD_RELAY_INTERFACE="$(uci get network.RELAY.network | awk '{print $2}')"
+old_relay_interface="$(uci get network.RELAY.network | awk '{print $2}')"
 
 # update 2.4ghz wifi tether
-WIFI_2_INTERFACE="wlan1"
-WIFI_2_IP="$(ip -f inet addr show $WIFI_2_INTERFACE 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
-if [ "$WIFI_2_IP" = "" ]; then
+wifi_2_interface="wlan1"
+wifi_2_ip="$(ip -f inet addr show ${wifi_2_interface} 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "${wifi_2_ip}" = "" ]; then
   echo "No 2.4GHz WiFi tether detected."
 else
-  echo "2.4GHz WiFi tether with address $WIFI_2_IP found."
+  echo "2.4GHz WiFi tether with address ${wifi_2_ip} found."
 
   # store relay interface ip address
-  NEW_RELAY_IP="$WIFI_2_IP"
+  new_relay_ip="${wifi_2_ip}"
 
   # store relay network device
-  NEW_RELAY_INTERFACE="WAN_WIFI_2"
+  new_relay_interface="WAN_WIFI_2"
 
   # store led to light up
-  NEW_RELAY_LED="wlan2g"
+  new_relay_led="wlan2g"
 
   # store expected interface argument for relayd
-  EXPECTED_INTERFACE="$WIFI_2_INTERFACE"
+  expected_interface="${wifi_2_interface}"
 fi
 
 # update 5ghz wifi tether
-WIFI_5_INTERFACE="wlan0"
-WIFI_5_IP="$(ip -f inet addr show "${WIFI_5_INTERFACE}" 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
-if [ "${WIFI_5_IP}" = "" ]; then
+wifi_5_interface="wlan0"
+wifi_5_ip="$(ip -f inet addr show "${wifi_5_interface}" 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "${wifi_5_ip}" = "" ]; then
   echo "No 5GHz WiFi tether detected."
 else
-  echo "5GHz WiFi tether with address ${WIFI_5_IP} found."
+  echo "5GHz WiFi tether with address ${wifi_5_ip} found."
 
   # store relay interface ip address
-  NEW_RELAY_IP="${WIFI_5_IP}"
+  new_relay_ip="${wifi_5_ip}"
 
   # store relay network device
-  NEW_RELAY_INTERFACE="WAN_WIFI_5"
+  new_relay_interface="WAN_WIFI_5"
 
   # store led to light up
-  NEW_RELAY_LED="wlan5g"
+  new_relay_led="wlan5g"
 
   # store expected interface argument for relayd
-  EXPECTED_INTERFACE="${WIFI_5_INTERFACE}"
+  expected_interface="${wifi_5_interface}"
 fi
 
 # update android usb tether
-USB_ANDROID_INTERFACE="usb0"
-USB_ANDROID_IP="$(ip -f inet addr show "${USB_ANDROID_INTERFACE}" 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
-if [ "${USB_ANDROID_IP}" = "" ]; then
+usb_android_interface="usb0"
+usb_android_ip="$(ip -f inet addr show "${usb_android_interface}" 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "${usb_android_ip}" = "" ]; then
   echo "No USB Android tether detected."
 else
-  echo "USB Android tether with address ${USB_ANDROID_IP} found."
+  echo "USB Android tether with address ${usb_android_ip} found."
 
   # store new relay interface ip address
-  NEW_RELAY_IP="${USB_ANDROID_IP}"
+  new_relay_ip="${usb_android_ip}"
 
   # store new relay network device
-  NEW_RELAY_INTERFACE="WAN_ANDROID_USB"
+  new_relay_interface="WAN_ANDROID_USB"
 
   # store led to light up
-  USB_PORT="$(dmesg | grep "usb0: register 'rndis_host'" | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
-  NEW_RELAY_LED="usb${USB_PORT}"
+  usb_port="$(dmesg | grep "usb0: register 'rndis_host'" | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
+  new_relay_led="usb${usb_port}"
 
   # store expected interface argument for relayd
-  EXPECTED_INTERFACE="${USB_ANDROID_INTERFACE}"
+  expected_interface="${usb_android_interface}"
 fi
 
 # update iphone usb tether
-USB_IPHONE_INTERFACE="eth2"
-USB_IPHONE_IP="$(ip -f inet addr show $USB_IPHONE_INTERFACE 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
-if [ "${USB_IPHONE_IP}" = "" ]; then
+usb_iphone_interface="eth2"
+usb_iphone_ip="$(ip -f inet addr show $usb_iphone_interface 2>/dev/null | grep inet | awk '{print $2}' | cut -d "/" -f1)"
+if [ "${usb_iphone_ip}" = "" ]; then
   echo "No USB iPhone tether detected."
 else
-  echo "USB iPhone tether with address ${USB_IPHONE_IP} found."
+  echo "USB iPhone tether with address ${usb_iphone_ip} found."
 
   # store new relay interface ip address
-  NEW_RELAY_IP="${USB_IPHONE_IP}"
+  new_relay_ip="${usb_iphone_ip}"
 
   # store new relay network device
-  NEW_RELAY_INTERFACE="WAN_IPHONE_USB"
+  new_relay_interface="WAN_IPHONE_USB"
 
   # store led to light up
-  USB_PORT="$(dmesg | grep "usb0: register 'rndis_host'" | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
-  NEW_RELAY_LED="usb${USB_PORT}"
+  usb_port="$(dmesg | grep "usb0: register 'rndis_host'" | tail -n1 | sed -e 's/^.*rndis_host\(.*\)usb0\(.*\)/\1/' | cut -d"-" -f1 | awk '{$1=$1};1')"
+  new_relay_led="usb${usb_port}"
 
   # store expected interface argument for relayd
-  EXPECTED_INTERFACE="${USB_IPHONE_INTERFACE}"
+  expected_interface="${usb_iphone_interface}"
 fi
 
 # check if ip has changed
-if [ "${NEW_RELAY_IP}" = "${OLD_RELAY_IP}" ]; then
+if [ "${new_relay_ip}" = "${old_relay_ip}" ]; then
   echo "IP hasn't changed. Skipping address update."
 else
-  echo "IP has changed. Updating to new address of ${NEW_RELAY_IP}."
+  echo "IP has changed. Updating to new address of ${new_relay_ip}."
 
   # set new relay interface ip address
-  uci set network.RELAY.ipaddr="${NEW_RELAY_IP}"
+  uci set network.RELAY.ipaddr="${new_relay_ip}"
 
   # queue changes
-  SHOULD_COMMIT="true"
+  should_commit="true"
 fi
 
 # check if interface has changed
-if [ "${NEW_RELAY_INTERFACE}" = "${OLD_RELAY_INTERFACE}" ]; then
+if [ "${new_relay_interface}" = "${old_relay_interface}" ]; then
   echo "Interface hasn't changed. Skipping interface update."
 else
-  echo "Interface has changed. Updating to new interface ${NEW_RELAY_INTERFACE}."
+  echo "Interface has changed. Updating to new interface ${new_relay_interface}."
 
   # set new relay interface ip address
-  uci set network.RELAY.network="LAN ${NEW_RELAY_INTERFACE}"
+  uci set network.RELAY.network="LAN ${new_relay_interface}"
 
   # queue changes
-  SHOULD_COMMIT="true"
+  should_commit="true"
 fi
 
 # update status leds if needed
-CURRENT_LED_STATUS="$(cat "/sys/class/leds/tp-link:green:${NEW_RELAY_LED}/brightness")"
-if ! [ "${CURRENT_LED_STATUS}" = "255" ]; then
+current_led_status="$(cat "/sys/class/leds/tp-link:green:${new_relay_led}/brightness")"
+if ! [ "${current_led_status}" = "255" ]; then
   # turn off all inactive uplink leds
-  for LED in usb1 usb2 wlan2g wlan5g; do
-    if ! [ "${LED}" = "${NEW_RELAY_LED}" ]; then
+  for led in usb1 usb2 wlan2g wlan5g; do
+    if ! [ "${led}" = "${new_relay_led}" ]; then
        echo '0' | tee "/sys/class/leds/tp-link:green:${LED}/brightness" >/dev/null
     fi
   done
 
   # turn on the led for the active uplink
-  echo '255' | tee "/sys/class/leds/tp-link:green:${NEW_RELAY_LED}/brightness" >/dev/null
+  echo '255' | tee "/sys/class/leds/tp-link:green:${new_relay_led}/brightness" >/dev/null
 
   # queue changes
-  SHOULD_COMMIT="true"
+  should_commit="true"
 fi
 
 # commit changes if needed
-if [ "${SHOULD_COMMIT}" = "true" ]; then
+if [ "${should_commit}" = "true" ]; then
   # commit changes to interface and/or ip address
   uci commit
 
   # queue relayd restart
-  SHOULD_RESTART="true"
+  should_restart="true"
 fi
 
 # if relayd is using the wrong interface, queue a restart
-if ! ps | grep "/usr/sbin/relayd -I br-LAN -I ${EXPECTED_INTERFACE}" 2>&1 >/dev/null; then
+if ! ps | grep "/usr/sbin/relayd -I br-LAN -I ${expected_interface}" 2>&1 >/dev/null; then
   echo "Wrong interface selected in relayd. Restarting process."
 
   # queue relayd restart
-  SHOULD_RESTART="true"
+  should_restart="true"
 fi
 
 # restart relayd if needed
-if [ "$SHOULD_RESTART" = "true" ]; then
+if [ "${should_restart}" = "true" ]; then
   # restart relayd to apply new interface and/or ip address
   /etc/init.d/relayd restart
 fi
