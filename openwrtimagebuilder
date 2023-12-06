@@ -63,7 +63,7 @@ log_file="${base_dir}/build-$(date +%Y%m%d%H%M%S).log"
 image_builder_dir="${base_dir}/imagebuilder"
 
 # set OpenWRT imagebuilder version to use
-release="22.03.0"
+release="22.03.6"
 target="ath79"
 profile="tplink_archer-c7-v2"
 version="openwrt-imagebuilder-${release}-${target}-generic.Linux-x86_64"
@@ -919,7 +919,7 @@ echo -e "\nBuilding OpenWRT image..."
 cd "${work_dir}" && \
 make image \
 PROFILE="${profile}" \
-PACKAGES="luci-ssl php7 php7-cgi php7-mod-ctype qrencode vnstat apinger luci-app-vnstat iwinfo curl tcpdump ncat snmp-utils luci-app-wireguard mtr arp-scan hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
+PACKAGES="luci-ssl php8 php8-cgi php8-mod-ctype qrencode vnstat apinger luci-app-vnstat iwinfo curl tcpdump ncat snmp-utils luci-app-wireguard mtr arp-scan hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
 FILES=files && \
 cp "${work_dir}/bin/targets/${target}/generic/openwrt-${release}-${target}-generic-${profile}-squashfs-factory-us.bin" "${base_dir}/factory.bin" && \
 cp "${work_dir}/bin/targets/${target}/generic/openwrt-${release}-${target}-generic-${profile}-squashfs-sysupgrade.bin" "${base_dir}/sysupgrade.bin"
