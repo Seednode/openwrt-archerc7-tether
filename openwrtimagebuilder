@@ -63,11 +63,11 @@ log_file="${base_dir}/build-$(date +%Y%m%d%H%M%S).log"
 image_builder_dir="${base_dir}/imagebuilder"
 
 # set OpenWRT imagebuilder version to use
-release="23.05.2"
+release="24.10.0"
 target="ath79"
 profile="tplink_archer-c7-v2"
 version="openwrt-imagebuilder-${release}-${target}-generic.Linux-x86_64"
-tarball="https://downloads.openwrt.org/releases/${release}/targets/${target}/generic/${version}.tar.xz"
+tarball="https://downloads.openwrt.org/releases/${release}/targets/${target}/generic/${version}.tar.zst"
 
 # delete any old builds if they exist
 if [ -d "${image_builder_dir}/${version}" ]; then
@@ -103,7 +103,7 @@ echo "Working directory is ${work_dir}"
 # download and extract the openwrt imagebuilder tool
 echo "Downloading imagebuilder tarball..."
 mkdir -p "${image_builder_dir}"
-curl -s "${tarball}" | tar -xJf - -C "${image_builder_dir}"
+curl -s "${tarball}" | zstd -d | tar -xf - -C "${image_builder_dir}"
 echo "Imagebuilder downloaded."
 
 # create directory for file overrides; this will serve as the effective / for any overwriting files
@@ -919,7 +919,7 @@ echo -e "\nBuilding OpenWRT image..."
 cd "${work_dir}" && \
 make image \
 PROFILE="${profile}" \
-PACKAGES="luci-ssl php8 php8-cgi php8-mod-ctype qrencode vnstat apinger luci-app-vnstat iwinfo curl tcpdump ncat snmp-utils luci-app-wireguard mtr arp-scan hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
+PACKAGES="luci-ssl php8 php8-cgi php8-mod-ctype qrencode vnstat apinger iwinfo curl tcpdump ncat snmp-utils mtr arp-scan hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
 FILES=files && \
 cp "${work_dir}/bin/targets/${target}/generic/openwrt-${release}-${target}-generic-${profile}-squashfs-factory-us.bin" "${base_dir}/factory.bin" && \
 cp "${work_dir}/bin/targets/${target}/generic/openwrt-${release}-${target}-generic-${profile}-squashfs-sysupgrade.bin" "${base_dir}/sysupgrade.bin"
