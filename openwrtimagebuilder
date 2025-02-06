@@ -919,7 +919,7 @@ echo -e "\nBuilding OpenWRT image..."
 cd "${work_dir}" && \
 make image \
 PROFILE="${profile}" \
-PACKAGES="luci-ssl php8 php8-cgi php8-mod-ctype qrencode vnstat apinger iwinfo curl tcpdump ncat snmp-utils mtr arp-scan hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
+PACKAGES="luci-ssl php8 php8-cgi php8-mod-ctype qrencode vnstat apinger iwinfo curl tcpdump ncat snmp-utils mtr arp-scan arp-scan-database hostapd-utils relayd luci-proto-relay kmod-usb-net kmod-usb-net-cdc-ether kmod-usb-net-rndis kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils -wpad-basic -wpad-mini -ppp -ppp-mod-pppoe -luci-proto-ppp" \
 FILES=files && \
 cp "${work_dir}/bin/targets/${target}/generic/openwrt-${release}-${target}-generic-${profile}-squashfs-factory-us.bin" "${base_dir}/factory.bin" && \
 cp "${work_dir}/bin/targets/${target}/generic/openwrt-${release}-${target}-generic-${profile}-squashfs-sysupgrade.bin" "${base_dir}/sysupgrade.bin"
